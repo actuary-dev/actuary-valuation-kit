@@ -7,6 +7,7 @@ IFRS 17 GMM measurement and roll-forward. The public demo basis and books are in
 Requires Python 3.13 or 3.14, Git and uv 0.12.19 or newer. Keep the clone,
 environment, caches, books and results outside synced folders.
 Follow [Windows installation](docs/WINDOWS.md) or [Linux installation](docs/LINUX.md).
+Get the ready-built wheel from [GitHub Releases](https://github.com/actuary-dev/actuary-valuation-kit/releases).
 
 ## A 30-second example
 After installation, start in the project root:

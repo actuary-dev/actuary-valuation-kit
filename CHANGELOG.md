@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Document Windows long paths and check that repository file paths stay within 140 characters.
+
 ## 0.1.0
 
 - Value five life insurance product families: term life, accidental death
