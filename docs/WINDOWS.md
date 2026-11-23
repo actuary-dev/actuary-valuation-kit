@@ -33,6 +33,22 @@ one, or select an installed interpreter with `$env:UV_PYTHON = '3.13'`
 (or `'3.14'`) and repeat the sync.
 The default Numba CPU selection is used; no CPU-name override is required.
 
+## Long file paths
+
+Windows has a 260-character path limit, and the longest file path in this
+repository is 138 characters from the project root. Keep the path to your
+clone folder under about 120 characters. If you move the uv cache, use a
+similarly short path.
+
+If Git or uv reports "Filename too long", enable long paths in Git:
+
+```powershell
+git config --global core.longpaths true
+```
+
+Retry the command, or install the ready-built wheel from
+[GitHub Releases](https://github.com/actuary-dev/actuary-valuation-kit/releases).
+
 ## Check and run the invented Term example
 Continue in the same PowerShell session:
 

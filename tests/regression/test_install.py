@@ -1,10 +1,57 @@
-"""A built wheel exposes its declared version after a clean install."""
+"""Check the installed wheel and repository paths used by Git installs."""
 
 import os
 import subprocess
 import sys
 import tomllib
+from collections.abc import Iterable
 from pathlib import Path
+
+import pytest
+
+
+def _assert_windows_path_lengths(paths: Iterable[str]) -> None:
+    limit = 140
+    offenders = sorted(
+        (path for path in paths if len(path) > limit),
+        key=lambda path: (-len(path), path),
+    )
+    if offenders:
+        longest = "\n".join(f"{len(path)} characters: {path}" for path in offenders[:5])
+        raise AssertionError(
+            f"Repository paths must be at most {limit} characters to leave room for "
+            f"the clone folder within the Windows 260-character path limit.\n{longest}"
+        )
+
+
+def test_repository_paths_leave_room_for_windows_clone_folder() -> None:
+    project = Path(__file__).resolve().parents[2]
+    source_dirs = {"src", "tests", "docs", "notebooks", "scripts", "examples"}
+    generated_dirs = {
+        "__pycache__",
+        ".pytest_cache",
+        ".mypy_cache",
+        ".ruff_cache",
+        ".import_linter_cache",
+        "build",
+        "dist",
+        "output",
+    }
+    paths = []
+    for directory, subdirs, files in project.walk():
+        if directory == project:
+            subdirs[:] = [name for name in subdirs if name in source_dirs]
+        else:
+            subdirs[:] = [name for name in subdirs if name not in generated_dirs]
+        paths.extend((directory / name).relative_to(project).as_posix() for name in files)
+    _assert_windows_path_lengths(paths)
+
+    at_limit = f"docs/{'x' * 132}.md"
+    _assert_windows_path_lengths([at_limit])
+    too_long = f"docs/{'x' * 133}.md"
+    with pytest.raises(AssertionError) as error:
+        _assert_windows_path_lengths([too_long])
+    assert f"141 characters: {too_long}" in str(error.value)
 
 
 def test_wheel_installs_and_reports_declared_version(tmp_path: Path) -> None:
