@@ -1,0 +1,9 @@
+section,index,field,value
+initial,0.0,sa,0.0
+initial,0.0,of_prem,0.04
+initial,0.0,fixed,85.0
+initial,0.0,of_sa,0.00015
+initial,500000.0,sa,500000.0
+initial,500000.0,of_prem,0.04
+initial,500000.0,fixed,85.0
+initial,500000.0,of_sa,0.00015

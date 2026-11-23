@@ -1,0 +1,44 @@
+# Regulation (EU) 2015/35 as enacted; incidence subset. See README.md.
+# https://eur-lex.europa.eu/eli/reg_del/2015/35/oj
+Cases:
+  - Name: Mortality
+    Risk: mortality
+    Shocks:
+      mortality: {Multiplicative: 1.15} # Article 137(1)
+  - Name: Morbidity
+    Risk: morbidity
+    Shocks:
+      morbidity:
+        - {Multiplicative: 1.35, Start_Month: 1, End_Month: 12} # Article 139(a)
+        - {Multiplicative: 1.25, Start_Month: 13, End_Month: last} # Article 139(b)
+  - Name: Lapse up
+    Risk: lapse up
+    Shocks:
+      lapse: {Multiplicative: 1.5} # Article 142(2)
+  - Name: Lapse down
+    Risk: lapse down
+    Shocks:
+      lapse: {Multiplicative: 0.5, Maximum_Decrease: 0.20} # Article 142(3)
+  - Name: Mass lapse
+    Risk: mass lapse
+    Factor: 0.40 # Article 142(6)(b)
+  - Name: Expenses
+    Risk: expense
+    Shocks:
+      expense: {Multiplicative: 1.10} # Article 140(a)
+      inflation: {Additive: 0.01} # Article 140(b)
+  - Name: Life catastrophe
+    Risk: life catastrophe
+    Shocks:
+      mortality: {Additive: 0.0015, Start_Month: 1, End_Month: 12} # Article 143(1)
+# Article 136(3), every cell; Disability -> morbidity, Life expense -> expense.
+Correlation:
+  mortality: {mortality: 1, morbidity: 0.25, expense: 0.25, lapse: 0, life catastrophe: 0.25}
+  morbidity: {mortality: 0.25, morbidity: 1, expense: 0.5, lapse: 0, life catastrophe: 0.25}
+  expense: {mortality: 0.25, morbidity: 0.5, expense: 1, lapse: 0.5, life catastrophe: 0.25}
+  lapse: {mortality: 0, morbidity: 0, expense: 0.5, lapse: 1, life catastrophe: 0.25}
+  life catastrophe: {mortality: 0.25, morbidity: 0.25, expense: 0.25, lapse: 0.25, life catastrophe: 1}
+Settings:
+  Aggregation: portfolio
+  Cost_of_Capital_Rate: 0.06 # Article 39 as enacted
+  Discount_Curve: reference_forward # User-selected demonstration curve

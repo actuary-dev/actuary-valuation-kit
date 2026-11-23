@@ -1,0 +1,206 @@
+product,parameter,value
+TERM,Inflation,0.025
+TERM,Tax Rate,0.2
+TERM,profit_transfer_rate,0.015
+TERM,prudent_margin_mortality,0.12
+TERM,prudent_margin_morbidity,0.15
+TERM,prudent_margin_lapse,-0.1
+TERM,prudent_margin_expense,0.1
+TERM,reserve_capital_factor,0.035
+TERM,sum_at_risk_capital_factor,0.002
+TERM,reserve_reinsurance_credit_floor,0.5
+TERM,sum_at_risk_reinsurance_credit_floor,0.5
+TERM,target_capital_ratio,1.5
+TERM,Reinsurance Retention Limit abs,60000.0
+TERM,Reinsurance Retention Limit proportion,0.75
+TERM,Reserving Method,1.0
+TERM,Use Male Mortality for Female,0.0
+TERM,Setback in years,0.0
+TERM,Operational Risk Charge - Earned Premium,0.03
+TERM,Operational risk charge - Technical provisions,0.004
+TERM,Cost of Capital Charge,0.055
+TERM,Minimum SA Multiplier,1.0
+TERM,Capital Expense Multiplier,1.1
+TERM,Capital Expense Inflation Addition,0.01
+TERM,Mass Lapse Stress Factor,0.4
+TERM,Catastrophe Risk Factor,0.0015
+TERM,Diversification Floor Factor,0.0
+TERM,IFRS17 Multiplier Renewal Expenses,1.0
+TERM,IFRS17 Addition Renewal Expenses,0.0
+TERM,IFRS 17 RA Ratio,0.08
+TERM,IFRS 17 RI RA Ratio,-0.05
+TERM,IFRS 17 stress expense,1.1
+TERM,IFRS 17 stress inflation,0.0
+TERM,IFRS17 Multiplier Initial Commission,1.0
+TERM,ifrs_initial_expense_multiplier,1.0
+TERM,Qx Mortality Proportion,1.0
+TERM,Int rate to calculate PV of WOP,0.04
+TERM,Max term for which UPR to be held (months),12.0
+TERM,flat_mortality_be,0.0018
+TERM,flat_mortality_reserving,0.0021
+TERM,lapses_after_payment_term,0.0
+TERM,renewal_premium_expense_after_payment_term,0.0
+ACCIDENTAL_DEATH_RIDER,Inflation,0.025
+ACCIDENTAL_DEATH_RIDER,Tax Rate,0.2
+ACCIDENTAL_DEATH_RIDER,profit_transfer_rate,0.015
+ACCIDENTAL_DEATH_RIDER,prudent_margin_mortality,0.12
+ACCIDENTAL_DEATH_RIDER,prudent_margin_morbidity,0.15
+ACCIDENTAL_DEATH_RIDER,prudent_margin_lapse,-0.1
+ACCIDENTAL_DEATH_RIDER,prudent_margin_expense,0.1
+ACCIDENTAL_DEATH_RIDER,reserve_capital_factor,0.035
+ACCIDENTAL_DEATH_RIDER,sum_at_risk_capital_factor,0.002
+ACCIDENTAL_DEATH_RIDER,reserve_reinsurance_credit_floor,0.5
+ACCIDENTAL_DEATH_RIDER,sum_at_risk_reinsurance_credit_floor,0.5
+ACCIDENTAL_DEATH_RIDER,target_capital_ratio,1.5
+ACCIDENTAL_DEATH_RIDER,Reinsurance Retention Limit abs,60000.0
+ACCIDENTAL_DEATH_RIDER,Reinsurance Retention Limit proportion,0.75
+ACCIDENTAL_DEATH_RIDER,Reserving Method,1.0
+ACCIDENTAL_DEATH_RIDER,Use Male Mortality for Female,0.0
+ACCIDENTAL_DEATH_RIDER,Setback in years,0.0
+ACCIDENTAL_DEATH_RIDER,Operational Risk Charge - Earned Premium,0.03
+ACCIDENTAL_DEATH_RIDER,Operational risk charge - Technical provisions,0.004
+ACCIDENTAL_DEATH_RIDER,Cost of Capital Charge,0.055
+ACCIDENTAL_DEATH_RIDER,Minimum SA Multiplier,1.0
+ACCIDENTAL_DEATH_RIDER,Capital Expense Multiplier,1.1
+ACCIDENTAL_DEATH_RIDER,Capital Expense Inflation Addition,0.01
+ACCIDENTAL_DEATH_RIDER,Mass Lapse Stress Factor,0.4
+ACCIDENTAL_DEATH_RIDER,Catastrophe Risk Factor,0.0015
+ACCIDENTAL_DEATH_RIDER,Diversification Floor Factor,0.0
+ACCIDENTAL_DEATH_RIDER,IFRS17 Multiplier Renewal Expenses,1.0
+ACCIDENTAL_DEATH_RIDER,IFRS17 Addition Renewal Expenses,0.0
+ACCIDENTAL_DEATH_RIDER,IFRS 17 RA Ratio,0.08
+ACCIDENTAL_DEATH_RIDER,IFRS 17 RI RA Ratio,-0.05
+ACCIDENTAL_DEATH_RIDER,IFRS 17 stress expense,1.1
+ACCIDENTAL_DEATH_RIDER,IFRS 17 stress inflation,0.0
+ACCIDENTAL_DEATH_RIDER,IFRS17 Multiplier Initial Commission,1.0
+ACCIDENTAL_DEATH_RIDER,ifrs_initial_expense_multiplier,1.0
+ACCIDENTAL_DEATH_RIDER,Qx Mortality Proportion,1.0
+ACCIDENTAL_DEATH_RIDER,Int rate to calculate PV of WOP,0.04
+ACCIDENTAL_DEATH_RIDER,Max term for which UPR to be held (months),12.0
+ACCIDENTAL_DEATH_RIDER,flat_mortality_be,0.0018
+ACCIDENTAL_DEATH_RIDER,flat_mortality_reserving,0.0021
+ACCIDENTAL_DEATH_RIDER,lapses_after_payment_term,0.0
+ACCIDENTAL_DEATH_RIDER,renewal_premium_expense_after_payment_term,0.0
+CRITICAL_ILLNESS_RIDER,Inflation,0.025
+CRITICAL_ILLNESS_RIDER,Tax Rate,0.2
+CRITICAL_ILLNESS_RIDER,profit_transfer_rate,0.015
+CRITICAL_ILLNESS_RIDER,prudent_margin_mortality,0.12
+CRITICAL_ILLNESS_RIDER,prudent_margin_morbidity,0.15
+CRITICAL_ILLNESS_RIDER,prudent_margin_lapse,-0.1
+CRITICAL_ILLNESS_RIDER,prudent_margin_expense,0.1
+CRITICAL_ILLNESS_RIDER,reserve_capital_factor,0.035
+CRITICAL_ILLNESS_RIDER,sum_at_risk_capital_factor,0.002
+CRITICAL_ILLNESS_RIDER,reserve_reinsurance_credit_floor,0.5
+CRITICAL_ILLNESS_RIDER,sum_at_risk_reinsurance_credit_floor,0.5
+CRITICAL_ILLNESS_RIDER,target_capital_ratio,1.5
+CRITICAL_ILLNESS_RIDER,Reinsurance Retention Limit abs,60000.0
+CRITICAL_ILLNESS_RIDER,Reinsurance Retention Limit proportion,0.75
+CRITICAL_ILLNESS_RIDER,Reserving Method,1.0
+CRITICAL_ILLNESS_RIDER,Use Male Mortality for Female,0.0
+CRITICAL_ILLNESS_RIDER,Setback in years,0.0
+CRITICAL_ILLNESS_RIDER,Operational Risk Charge - Earned Premium,0.03
+CRITICAL_ILLNESS_RIDER,Operational risk charge - Technical provisions,0.004
+CRITICAL_ILLNESS_RIDER,Cost of Capital Charge,0.055
+CRITICAL_ILLNESS_RIDER,Minimum SA Multiplier,1.0
+CRITICAL_ILLNESS_RIDER,Capital Expense Multiplier,1.1
+CRITICAL_ILLNESS_RIDER,Capital Expense Inflation Addition,0.01
+CRITICAL_ILLNESS_RIDER,Mass Lapse Stress Factor,0.4
+CRITICAL_ILLNESS_RIDER,Catastrophe Risk Factor,0.0015
+CRITICAL_ILLNESS_RIDER,Diversification Floor Factor,0.0
+CRITICAL_ILLNESS_RIDER,IFRS17 Multiplier Renewal Expenses,1.0
+CRITICAL_ILLNESS_RIDER,IFRS17 Addition Renewal Expenses,0.0
+CRITICAL_ILLNESS_RIDER,IFRS 17 RA Ratio,0.08
+CRITICAL_ILLNESS_RIDER,IFRS 17 RI RA Ratio,-0.05
+CRITICAL_ILLNESS_RIDER,IFRS 17 stress expense,1.1
+CRITICAL_ILLNESS_RIDER,IFRS 17 stress inflation,0.0
+CRITICAL_ILLNESS_RIDER,IFRS17 Multiplier Initial Commission,1.0
+CRITICAL_ILLNESS_RIDER,ifrs_initial_expense_multiplier,1.0
+CRITICAL_ILLNESS_RIDER,Qx Mortality Proportion,1.0
+CRITICAL_ILLNESS_RIDER,Int rate to calculate PV of WOP,0.04
+CRITICAL_ILLNESS_RIDER,Max term for which UPR to be held (months),12.0
+CRITICAL_ILLNESS_RIDER,flat_mortality_be,0.0018
+CRITICAL_ILLNESS_RIDER,flat_mortality_reserving,0.0021
+CRITICAL_ILLNESS_RIDER,lapses_after_payment_term,0.0
+CRITICAL_ILLNESS_RIDER,renewal_premium_expense_after_payment_term,0.0
+DISABILITY_RIDER,Inflation,0.025
+DISABILITY_RIDER,Tax Rate,0.2
+DISABILITY_RIDER,profit_transfer_rate,0.015
+DISABILITY_RIDER,prudent_margin_mortality,0.12
+DISABILITY_RIDER,prudent_margin_morbidity,0.15
+DISABILITY_RIDER,prudent_margin_lapse,-0.1
+DISABILITY_RIDER,prudent_margin_expense,0.1
+DISABILITY_RIDER,reserve_capital_factor,0.035
+DISABILITY_RIDER,sum_at_risk_capital_factor,0.002
+DISABILITY_RIDER,reserve_reinsurance_credit_floor,0.5
+DISABILITY_RIDER,sum_at_risk_reinsurance_credit_floor,0.5
+DISABILITY_RIDER,target_capital_ratio,1.5
+DISABILITY_RIDER,Reinsurance Retention Limit abs,60000.0
+DISABILITY_RIDER,Reinsurance Retention Limit proportion,0.75
+DISABILITY_RIDER,Reserving Method,1.0
+DISABILITY_RIDER,Use Male Mortality for Female,0.0
+DISABILITY_RIDER,Setback in years,0.0
+DISABILITY_RIDER,Operational Risk Charge - Earned Premium,0.03
+DISABILITY_RIDER,Operational risk charge - Technical provisions,0.004
+DISABILITY_RIDER,Cost of Capital Charge,0.055
+DISABILITY_RIDER,Minimum SA Multiplier,1.0
+DISABILITY_RIDER,Capital Expense Multiplier,1.1
+DISABILITY_RIDER,Capital Expense Inflation Addition,0.01
+DISABILITY_RIDER,Mass Lapse Stress Factor,0.4
+DISABILITY_RIDER,Catastrophe Risk Factor,0.0015
+DISABILITY_RIDER,Diversification Floor Factor,0.0
+DISABILITY_RIDER,IFRS17 Multiplier Renewal Expenses,1.0
+DISABILITY_RIDER,IFRS17 Addition Renewal Expenses,0.0
+DISABILITY_RIDER,IFRS 17 RA Ratio,0.08
+DISABILITY_RIDER,IFRS 17 RI RA Ratio,-0.05
+DISABILITY_RIDER,IFRS 17 stress expense,1.1
+DISABILITY_RIDER,IFRS 17 stress inflation,0.0
+DISABILITY_RIDER,IFRS17 Multiplier Initial Commission,1.0
+DISABILITY_RIDER,ifrs_initial_expense_multiplier,1.0
+DISABILITY_RIDER,Qx Mortality Proportion,1.0
+DISABILITY_RIDER,Int rate to calculate PV of WOP,0.04
+DISABILITY_RIDER,Max term for which UPR to be held (months),12.0
+DISABILITY_RIDER,flat_mortality_be,0.0018
+DISABILITY_RIDER,flat_mortality_reserving,0.0021
+DISABILITY_RIDER,lapses_after_payment_term,0.0
+DISABILITY_RIDER,renewal_premium_expense_after_payment_term,0.0
+CREDIT_LIFE,Inflation,0.025
+CREDIT_LIFE,Tax Rate,0.2
+CREDIT_LIFE,profit_transfer_rate,0.015
+CREDIT_LIFE,prudent_margin_mortality,0.12
+CREDIT_LIFE,prudent_margin_morbidity,0.15
+CREDIT_LIFE,prudent_margin_lapse,-0.1
+CREDIT_LIFE,prudent_margin_expense,0.1
+CREDIT_LIFE,reserve_capital_factor,0.035
+CREDIT_LIFE,sum_at_risk_capital_factor,0.002
+CREDIT_LIFE,reserve_reinsurance_credit_floor,0.5
+CREDIT_LIFE,sum_at_risk_reinsurance_credit_floor,0.5
+CREDIT_LIFE,target_capital_ratio,1.5
+CREDIT_LIFE,Reinsurance Retention Limit abs,60000.0
+CREDIT_LIFE,Reinsurance Retention Limit proportion,0.75
+CREDIT_LIFE,Reserving Method,1.0
+CREDIT_LIFE,Use Male Mortality for Female,0.0
+CREDIT_LIFE,Setback in years,0.0
+CREDIT_LIFE,Operational Risk Charge - Earned Premium,0.03
+CREDIT_LIFE,Operational risk charge - Technical provisions,0.004
+CREDIT_LIFE,Cost of Capital Charge,0.055
+CREDIT_LIFE,Minimum SA Multiplier,1.0
+CREDIT_LIFE,Capital Expense Multiplier,1.1
+CREDIT_LIFE,Capital Expense Inflation Addition,0.01
+CREDIT_LIFE,Mass Lapse Stress Factor,0.4
+CREDIT_LIFE,Catastrophe Risk Factor,0.0015
+CREDIT_LIFE,Diversification Floor Factor,0.0
+CREDIT_LIFE,IFRS17 Multiplier Renewal Expenses,1.0
+CREDIT_LIFE,IFRS17 Addition Renewal Expenses,0.0
+CREDIT_LIFE,IFRS 17 RA Ratio,0.08
+CREDIT_LIFE,IFRS 17 RI RA Ratio,-0.05
+CREDIT_LIFE,IFRS 17 stress expense,1.1
+CREDIT_LIFE,IFRS 17 stress inflation,0.0
+CREDIT_LIFE,IFRS17 Multiplier Initial Commission,1.0
+CREDIT_LIFE,ifrs_initial_expense_multiplier,1.0
+CREDIT_LIFE,Qx Mortality Proportion,1.0
+CREDIT_LIFE,Int rate to calculate PV of WOP,0.04
+CREDIT_LIFE,Max term for which UPR to be held (months),12.0
+CREDIT_LIFE,flat_mortality_be,0.0018
+CREDIT_LIFE,flat_mortality_reserving,0.0021
+CREDIT_LIFE,lapses_after_payment_term,1.0
+CREDIT_LIFE,renewal_premium_expense_after_payment_term,1.0

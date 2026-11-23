@@ -1,0 +1,17 @@
+risk,other,value
+mortality,mortality,1.0
+mortality,expense,0.25
+mortality,lapse,0.0
+mortality,life catastrophe,0.25
+expense,mortality,0.25
+expense,expense,1.0
+expense,lapse,0.5
+expense,life catastrophe,0.25
+lapse,mortality,0.0
+lapse,expense,0.5
+lapse,lapse,1.0
+lapse,life catastrophe,0.25
+life catastrophe,mortality,0.25
+life catastrophe,expense,0.25
+life catastrophe,lapse,0.25
+life catastrophe,life catastrophe,1.0

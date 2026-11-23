@@ -1,0 +1,16 @@
+[build-system]
+requires = ["uv_build==0.12.19"]
+build-backend = "uv_build"
+
+[project]
+name = "tutorial-products"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = []
+
+[project.entry-points."avk.products"]
+tutorial_term = "tutorial_products.factory:MyTermFactory"
+tutorial_rop = "tutorial_products.factory:ReturnFactory"
+
+[project.entry-points."avk.formats"]
+tutorial_mortality = "tutorial_products.formats:mortality"

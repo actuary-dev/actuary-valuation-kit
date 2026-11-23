@@ -1,0 +1,207 @@
+[build-system]
+requires = ["uv_build==0.12.19"]
+build-backend = "uv_build"
+
+[project]
+name = "actuary-valuation-kit"
+version = "0.1.0"
+description = "Actuarial projection models compiled from formulas"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+requires-python = ">=3.13,<3.15"
+dependencies = [
+    "numpy==2.5.3",
+    "numba==0.67.0",
+    "polars==1.44.2",
+    "pyarrow==25.0.1",
+    "pyyaml>=6,<7",
+    "pydantic==2.13.5",
+]
+
+[project.urls]
+Repository = "https://github.com/actuary-dev/actuary-valuation-kit"
+
+[project.scripts]
+avk = "avk.cli:main"
+
+[project.optional-dependencies]
+gpu = ["numba-cuda-mlir[cu13]==0.5.3"]
+ui = ["streamlit>=1.64,<2", "plotly>=7,<8", "psutil>=7,<8"]
+sql = ["SQLAlchemy>=2.1,<2.2", "mysql-connector-python>=26.7,<27"]
+mssql = ["pyodbc>=5,<6"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9,<10",
+    "ruff>=0.16,<0.17",
+    "mypy>=2.3,<2.4",
+    "import-linter==2.15",
+    "nbmake>=1.5,<2",
+]
+
+[tool.uv.build-backend]
+module-name = "avk"
+source-exclude = ["CLAUDE.md", "tests/saved/demo/README.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = '-m "not slow and not perf and not gpu and not sql"'
+markers = [
+    "slow: public 100k product regressions",
+    "perf: complete-run performance budgets",
+    "gpu: manual NVIDIA GPU regressions",
+    "sql: SQL integration regressions",
+    "ui: Streamlit user flows",
+    "purepython: complete runs with NUMBA_DISABLE_JIT=1",
+]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+files = ["src/avk"]
+python_version = "3.13"
+strict = true
+
+[[tool.mypy.overrides]]
+module = ["avk.products.*.formulas", "avk.products.rider.critical_illness", "avk.products.rider.disability", "avk.products.common.*", "avk.generated.*"]
+ignore_errors = true
+
+[tool.importlinter]
+root_package = "avk"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Numerical core is independent"
+type = "forbidden"
+source_modules = ["avk.model"]
+forbidden_modules = ["avk.products","avk.inputs","avk.assumptions","avk.esg","avk.outputs","avk.runs","avk.runtime","avk.api","avk.cli","avk.ui","avk.testing","polars","pandas","pydantic","sqlalchemy","streamlit","plotly","yaml"]
+
+[[tool.importlinter.contracts]]
+name = "products dependency boundary"
+type = "forbidden"
+source_modules = ["avk.products"]
+forbidden_modules = ["avk.esg","avk.runs","avk.api","avk.cli","avk.ui","avk.testing"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "inputs dependency boundary"
+type = "forbidden"
+source_modules = ["avk.inputs"]
+forbidden_modules = ["avk.products","avk.assumptions","avk.esg","avk.outputs","avk.runs","avk.api","avk.cli","avk.ui","avk.testing"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "assumptions dependency boundary"
+type = "forbidden"
+source_modules = ["avk.assumptions"]
+forbidden_modules = ["avk.products","avk.esg","avk.outputs","avk.runs","avk.api","avk.cli","avk.ui","avk.testing"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "esg dependency boundary"
+type = "forbidden"
+source_modules = ["avk.esg"]
+forbidden_modules = ["avk.products","avk.outputs","avk.runs","avk.api","avk.cli","avk.ui","avk.testing"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "outputs dependency boundary"
+type = "forbidden"
+source_modules = ["avk.outputs"]
+forbidden_modules = ["avk.products","avk.inputs","avk.assumptions","avk.esg","avk.runs","avk.api","avk.cli","avk.ui","avk.testing"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "runs dependency boundary"
+type = "forbidden"
+source_modules = ["avk.runs"]
+forbidden_modules = ["avk.api","avk.cli","avk.ui","avk.testing"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "runtime dependency boundary"
+type = "forbidden"
+source_modules = ["avk.runtime"]
+forbidden_modules = ["avk.products","avk.inputs","avk.assumptions","avk.esg","avk.outputs","avk.runs","avk.api","avk.cli","avk.ui","avk.testing"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "api dependency boundary"
+type = "forbidden"
+source_modules = ["avk.api"]
+forbidden_modules = ["avk.outputs","avk.cli","avk.ui","avk.testing"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "cli dependency boundary"
+type = "forbidden"
+source_modules = ["avk.cli"]
+forbidden_modules = ["avk.outputs","avk.ui","avk.testing"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Formulas only use the authoring API and other formulas"
+type = "forbidden"
+source_modules = ["avk.products.*.formulas", "avk.products.rider.critical_illness", "avk.products.rider.disability", "avk.products.common", "avk.products.common.**"]
+forbidden_modules = [
+    "avk", "avk.**",
+    "polars", "pandas", "pydantic", "sqlalchemy", "streamlit", "plotly",
+    "yaml", "numpy", "numba", "numba_cuda_mlir", "pyarrow", "psutil",
+    "mysql", "pyodbc",
+]
+as_packages = false
+allow_indirect_imports = true
+# These are the exact allowed edges, including future common formula modules.
+ignore_imports = [
+    "avk.products.rider.disability -> avk.products.rider.critical_illness",
+    "avk.products.rider.critical_illness -> avk.model.lang",
+    "avk.products.rider.critical_illness -> avk.products.common.**",
+    "avk.products.rider.critical_illness -> avk.products.rider.formulas",
+    "avk.products.*.formulas -> avk.model.lang",
+    "avk.products.*.formulas -> avk.products.*.formulas",
+    "avk.products.*.formulas -> avk.products.common",
+    "avk.products.*.formulas -> avk.products.common.**",
+    "avk.products.common -> avk.model.lang",
+    "avk.products.common -> avk.products.*.formulas",
+    "avk.products.common -> avk.products.common.**",
+    "avk.products.common.** -> avk.model.lang",
+    "avk.products.common.** -> avk.products.*.formulas",
+    "avk.products.common.** -> avk.products.common",
+    "avk.products.common.** -> avk.products.common.**",
+]
+unmatched_ignore_imports_alerting = "none"
+
+[[tool.importlinter.contracts]]
+name = "UI only uses the public API and progress contract"
+type = "forbidden"
+source_modules = ["avk.ui"]
+forbidden_modules = ["avk.model","avk.products","avk.inputs","avk.assumptions","avk.esg","avk.outputs","avk.runs","avk.runtime","avk.cli","avk.testing"]
+allow_indirect_imports = true
+ignore_imports = [
+    "avk.ui -> avk.runtime.progress",
+    "avk.ui.** -> avk.runtime.progress",
+]
+unmatched_ignore_imports_alerting = "none"
+
+[[tool.importlinter.contracts]]
+name = "Testing utilities are never production dependencies"
+type = "forbidden"
+source_modules = ["avk.model","avk.products","avk.inputs","avk.assumptions","avk.esg","avk.outputs","avk.runs","avk.runtime","avk.api","avk.cli","avk.ui"]
+forbidden_modules = ["avk.testing"]
+
+[[tool.importlinter.contracts]]
+name = "Testing utilities use only the public API"
+type = "forbidden"
+source_modules = ["avk.testing"]
+forbidden_modules = [
+    "avk.model", "avk.products", "avk.inputs", "avk.assumptions",
+    "avk.esg", "avk.outputs", "avk.runs", "avk.runtime",
+    "avk.cli", "avk.ui",
+]
+allow_indirect_imports = true
