@@ -28,10 +28,12 @@ CLASS_RULES: Mapping[ToleranceClass, tuple[float, float]] = MappingProxyType(
         "value": (1e-6, 1e-8),
     }
 )
-# The absolute floor applies only to monetary values. Strict non-monetary
+# The value-class floor applies only to monetary values. Strict non-monetary
 # rules stay unchanged, so the floor applies to a "value" column only when it is not listed in
 # NON_MONETARY_VALUES.
 VALUE_ABSOLUTE_FLOOR = 1e-5
+# 1e-10 percentage points equals a 1e-12 relative movement in the underlying amounts.
+CHANGE_PCT_ABSOLUTE_FLOOR = 1e-10
 # "value" is the manifest default for every computed number, so these captured columns hold lives,
 # counts, coverage units, factors, rates, flags and policy attributes rather than money. They keep
 # the plain value rule. A new golden that captures another non-monetary "value" column adds it
@@ -210,13 +212,12 @@ def _compare(
                 )
             else:
                 scales = np.full(g.height, np.max(finite_abs, initial=0))
-            count, relative, scaled = _numbers(
-                cv,
-                gv,
-                scales,
-                CLASS_RULES[cls],
-                VALUE_ABSOLUTE_FLOOR if cls == "value" and name not in NON_MONETARY_VALUES else 0.0,
-            )
+            absolute_floor = 0.0
+            if cls == "value" and name not in NON_MONETARY_VALUES:
+                absolute_floor = VALUE_ABSOLUTE_FLOOR
+            elif cls == "rate" and name.endswith("_change_pct"):
+                absolute_floor = CHANGE_PCT_ABSOLUTE_FLOOR
+            count, relative, scaled = _numbers(cv, gv, scales, CLASS_RULES[cls], absolute_floor)
             # Null and IEEE NaN are different writer representations.
             count += int(np.count_nonzero(cs.is_null().to_numpy() != gs.is_null().to_numpy()))
             report.columns.append(ColumnResult(name, cls, count, relative, scaled))

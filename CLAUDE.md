@@ -19,9 +19,10 @@ fixed logical blocks of 1024 policies so that batch sizes and thread counts
 preserve results. Load all inputs explicitly and validate before projection.
 Writers format the ordered output schema and stream per-policy data.
 
-Use `avk.testing.parity` for comparisons. Rates use relative tolerance 1e-12.
-Decrements use 1e-9 relative plus 1e-10 times scale. Other values use 1e-6
-relative plus 1e-8 times scale. Money alone has an absolute floor of 1e-5.
+Use `avk.testing.parity` for comparisons. Rates use relative tolerance 1e-12,
+with an absolute floor of 1e-10 percentage points for rate columns ending in
+`_change_pct`. Decrements use 1e-9 relative plus 1e-10 times scale. Other values
+use 1e-6 relative plus 1e-8 times scale. Money has an absolute floor of 1e-5.
 Identifiers and text match exactly. Never relax decrement tolerances.
 
 Treat saved results as the numerical reference. A change needs maintainer
