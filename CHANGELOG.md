@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Allow a 1e-10 percentage-point floor in parity checks for percentage-change rate columns.
 - Document Windows long paths and check that repository file paths stay within 140 characters.
 
 ## 0.1.0

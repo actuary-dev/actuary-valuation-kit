@@ -11,6 +11,11 @@ The command runs all five products and valuation, cases, stress capital, IFRS
 measurement and roll-forward at 10k and 100k, seed 209. CSV outputs become
 lossless Zstandard Parquet files. MANIFEST.json records every column class;
 all comparisons use avk.testing.parity, with no local tolerance constants.
+For rate columns ending in `_change_pct`, parity accepts the larger of the
+1e-12 relative tolerance and 1e-10 percentage points. Small percentage changes
+can magnify rounding error in relative comparisons. A difference of 1e-10
+percentage points corresponds to a 1e-12 relative movement in the underlying amounts.
+
 The default suite runs 25 10k regressions; the slow group adds all 25 100k paths
 and a 100k byte comparison across batch sizes 1024/8192 and threads 1/4.
 The byte check covers every CSV, including seriatim, without storing seriatim.
