@@ -5,8 +5,8 @@ with the columns `Scenario` (an integer scenario number), `Seed` (the integer se
 generated it, constant within a scenario), `Month` (0 to the horizon less one) and one column
 per scenario variable the product declares, exactly those. `Settings: {Measure: ...}` names
 the measure (`real_world` or `risk_neutral`); there is no default. Scenarios are equally
-weighted and processed in scenario-number order. Generate scenarios externally before
-supplying them to the calculator.
+weighted and processed in scenario-number order. Use `avk scenarios` or an external
+generator to prepare the file.
 """
 
 import hashlib

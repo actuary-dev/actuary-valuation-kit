@@ -3,9 +3,11 @@
 import argparse
 import sys
 from collections.abc import Sequence
+from pathlib import Path
 
 from avk.api import check, compile, run, version
 from avk.demo.generate import add_generate_arguments, generate
+from avk.runs.scenarios import generate_scenarios, scenario_library
 from avk.runtime.errors import AvkError
 
 
@@ -48,9 +50,28 @@ def main(argv: Sequence[str] | None = None) -> int:
         demo = commands.add_parser("demo", help="Work with invented demonstration books")
         demo_actions = demo.add_subparsers(dest="action", required=True)
         add_generate_arguments(demo_actions.add_parser("generate", help="Generate a demo book"))
+        scenarios = commands.add_parser("scenarios", help="Write supplied scenario files")
+        scenario_actions = scenarios.add_subparsers(dest="action", required=True)
+        scenario_generate = scenario_actions.add_parser(
+            "generate", help="Run the scenario generator"
+        )
+        scenario_generate.add_argument("run_file", type=Path)
+        scenario_generate.add_argument("output", type=Path)
+        library = scenario_actions.add_parser(
+            "library", help="Apply deterministic scenario overlays"
+        )
+        library.add_argument("run_file", type=Path)
+        library.add_argument("library_file", type=Path)
+        library.add_argument("folder", type=Path)
         args = parser.parse_args(argv)
         if args.command == "demo":
             print(generate(args.folder, args.product, args.count, args.seed))
+        elif args.command == "scenarios":
+            if args.action == "generate":
+                print(generate_scenarios(args.run_file, args.output))
+            else:
+                for path in scenario_library(args.run_file, args.library_file, args.folder):
+                    print(path)
         elif args.command == "run":
             result = run(
                 args.config, root=args.root, diagnostics=args.diagnostics, output=args.output
