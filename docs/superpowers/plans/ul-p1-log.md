@@ -76,3 +76,26 @@ Plan: `docs/superpowers/plans/2026-11-26-ul-p1-inputs.md`. Branch: `claude/ul-p1
   - Companion validation runs only after the policy rows pass, and its errors are
     raised as one `InputError` before any preparation.
 - Next: Task 5 (validation).
+
+## Task 5: policy, holdings and cap validation — done
+
+- Files: `src/avk/products/unit_linked/validation.py`, `tests/unit_linked/conftest.py`
+  (valid six-policy book; demo tables loaded as the run binds them),
+  `tests/unit_linked/test_validation.py`.
+- Test: `uv run pytest tests/unit_linked/test_validation.py -q` → 65 passed.
+- Decisions:
+  - Deviation: `check_policies_against_tables(policies, holdings, tables)` takes the raw
+    policy and holding rows (the plan wrote `(prepared, tables)`). Rules that need
+    `ul_funds` move there from the holdings validator: Fund Code exists (exact match),
+    at most `MAX_FUND_SLOTS` holdings outside the DPF, the DPF holding rules, zero
+    allocation to non-selectable funds. They raise at preparation in the same
+    joined `InputError`.
+  - Valuation-date rules (Valuation Date equals the run date, start and status dates
+    not after it) are in `validate_at`, which sees the run date.
+  - A zero allocation year among the first five fails the ratio rule unless all five
+    are zero. Sum-assured minimum uses the regular multiples for regular and limited
+    pay and the single multiples (of the single premium) for single premium.
+  - Extra rules: term positive, payment term at most the term, EMR positive, integer
+    columns integral, code columns (Profitability Group, Transition Approach) in range,
+    Measurement Model VFA or GMM, variant single_premium agrees with frequency 0.
+- Next: Task 6 (preparation).
