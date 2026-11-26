@@ -76,9 +76,7 @@ def test_run_reports_the_opening_funds(demo, tmp_path):
     )
     expected = {
         name: float(
-            holdings.filter(selector)
-            .select((pl.col("Units") * pl.col("price")).sum())
-            .item()
+            holdings.filter(selector).select((pl.col("Units") * pl.col("price")).sum()).item()
         )
         for name, selector in (
             ("funds_opening_unit_fund", pl.col("Fund Code") != "DPF"),
@@ -100,8 +98,9 @@ def test_run_reports_the_opening_funds(demo, tmp_path):
 def test_other_run_types_rejected(tmp_path, run_type):
     term = generate(tmp_path / "term", "TERM", 24, 209)
     source = json.loads(
-        (term.parent / ("capital.json" if run_type == "StressCapital" else "measurement.json"))
-        .read_text()
+        (
+            term.parent / ("capital.json" if run_type == "StressCapital" else "measurement.json")
+        ).read_text()
     )
     config = json.loads(generate(tmp_path / "ul", "UNIT_LINKED", 24, 209).read_text())
     config["Run_Type"] = run_type
