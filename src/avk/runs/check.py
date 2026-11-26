@@ -25,6 +25,7 @@ from avk.assumptions.models import InterestCurveAssumption, ProductParameters, T
 from avk.esg import registry as generators
 from avk.inputs.registry import InputSpec
 from avk.inputs.sources import ResolvedInputs, Sources
+from avk.inputs.validation import Issue
 from avk.model.compiler import bound
 from avk.model.data import ModelPoints, ScenarioSet, Table
 from avk.model.manifest import Manifest
@@ -61,6 +62,8 @@ class CheckReport:
     measurement: "MeasurementSettings | None" = None
     rollforward_balances: pl.DataFrame | None = None
     streamed_policies: bool = False
+    # Companion policy tables, read once per run (`ProductFactory.companion_tables`).
+    companions: dict[str, pl.DataFrame] = field(default_factory=dict)
     prepared_mapping: mmap.mmap | None = field(default=None, repr=False)
 
     def release_prepared_pages(self) -> None:
@@ -140,12 +143,31 @@ def _check_declarations(code: str, spec: AssumptionSpec, declared: Manifest) -> 
         )
 
 
+def _companions(
+    factory: ProductFactory, inputs: ResolvedInputs, report: CheckReport
+) -> dict[str, pl.DataFrame]:
+    """The factory's companion policy tables, each read once per run."""
+    for name in factory.companion_tables:
+        if name not in report.companions:
+            report.companions[name] = inputs.read(name)
+    return {name: report.companions[name] for name in factory.companion_tables}
+
+
+def _raise_errors(issues: list[Issue], report: CheckReport) -> None:
+    report.notes.extend(issue.message for issue in issues if issue.severity == "warning")
+    errors = [issue.message for issue in issues if issue.severity == "error"]
+    if errors:
+        raise InputError("\n".join(errors))
+
+
 def _prepare(
     factory: ProductFactory,
     inputs: ResolvedInputs,
     cfg: RunConfig,
     report: CheckReport,
     raw: pl.DataFrame | None = None,
+    *,
+    batch: bool = False,
 ) -> ModelPoints[pl.DataFrame]:
     if raw is None and inputs.location(factory.policy_table).source == "parquet":
         import sqlite3
@@ -153,14 +175,15 @@ def _prepare(
         import pyarrow as pa  # type: ignore[import-untyped]
         import pyarrow.ipc as ipc  # type: ignore[import-untyped]
 
+        companions = _companions(factory, inputs, report)
         spool = inputs.temporary()
         fields: tuple[str, ...] = ()
         with spool.open("wb") as handle:
             writer = None
             schema = None
             try:
-                for batch in inputs.policy_batches(factory.policy_table, cfg.batch_size):
-                    prepared = _prepare(factory, inputs, cfg, report, batch)
+                for rows in inputs.policy_batches(factory.policy_table, cfg.batch_size):
+                    prepared = _prepare(factory, inputs, cfg, report, rows, batch=True)
                     fields = prepared.fields
                     if schema is None:
                         schema = prepared.frame.schema
@@ -183,6 +206,7 @@ def _prepare(
         # An exact on-disk index bounds duplicate-check scratch independently of the
         # book. Arrow reads one record batch, never a whole identifier column.
         index = spool.with_suffix(".sqlite")
+        orphans: list[Issue] = []
         try:
             with closing(sqlite3.connect(index)) as connection:
                 connection.execute("PRAGMA cache_size=-2048")
@@ -192,12 +216,34 @@ def _prepare(
                     for i in range(reader.num_record_batches):
                         identifiers = reader.get_batch(i).column(column).to_pylist()
                         connection.executemany("INSERT INTO ids VALUES (?)", zip(identifiers))
+                if companions:
+                    assert schema is not None
+                    dtype = schema["Policy_Number"]
+
+                    def known(values: pl.Series) -> pl.Series:
+                        """Policy numbers present in the streamed book (index lookups)."""
+                        probe = values.cast(dtype, strict=False)
+                        candidates = probe.drop_nulls().unique().to_list()
+                        found: list[Any] = []
+                        for start in range(0, len(candidates), 900):
+                            chunk = candidates[start : start + 900]
+                            marks = ",".join("?" * len(chunk))
+                            found.extend(
+                                row[0]
+                                for row in connection.execute(
+                                    f"SELECT value FROM ids WHERE value IN ({marks})", chunk
+                                )
+                            )
+                        return probe.is_in(pl.Series(found, dtype=dtype).implode()).fill_null(False)
+
+                    orphans = factory.validator().companion_orphans(known, companions)
         except sqlite3.IntegrityError as exc:
             raise InputError(
                 f"{factory.policy_table}: duplicate value(s) in identifier column"
             ) from exc
         finally:
             index.unlink(missing_ok=True)
+        _raise_errors(orphans, report)
         report.streamed_policies = True
         report.notes[:] = list(dict.fromkeys(report.notes))
         # Own the mapping so clean pages can be discarded after each physical batch.
@@ -222,11 +268,29 @@ def _prepare(
         except pl.exceptions.PolarsError:
             errors.append(f"{factory.policy_table}: product code not in Products_to_run")
         raise InputError("\n".join(errors))
-    adapter = factory.model_point_adapter(MappingProxyType(dict(report.tables)))
+    tables = MappingProxyType(dict(report.tables))
+    companions = _companions(factory, inputs, report)
+    if companions:
+        validator = factory.validator()
+        _raise_errors(validator.validate_companions(raw, companions, cfg.valuation_date), report)
+        adapter = factory.companion_adapter(tables, MappingProxyType(companions))
+    else:
+        adapter = factory.model_point_adapter(tables)
     try:
-        return adapter.prepare(raw, cfg)
+        points = adapter.prepare(raw, cfg)
     except pl.exceptions.PolarsError as exc:
         raise InputError(f"{factory.policy_table}: cannot prepare model points: {exc}") from exc
+    if companions and not batch:
+        numbers = points.frame["Policy_Number"]
+
+        def known(values: pl.Series) -> pl.Series:
+            """Policy numbers present in the book."""
+            return (
+                values.cast(numbers.dtype, strict=False).is_in(numbers.implode()).fill_null(False)
+            )
+
+        _raise_errors(validator.companion_orphans(known, companions), report)
+    return points
 
 
 def _check_single(

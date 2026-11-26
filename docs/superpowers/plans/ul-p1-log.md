@@ -58,3 +58,21 @@ Plan: `docs/superpowers/plans/2026-11-26-ul-p1-inputs.md`. Branch: `claude/ul-p1
   - UNCAPPED: 1 for rate maxima, 1e12 for amounts and ratios, 0 for minimums.
   - Lapse years 2-4 are 7/6/5%, years 6-10 9/8.25/7.5/6.75/6%.
 - Next: Task 4 (companion-table hook).
+
+## Task 4: companion-table hook — done
+
+- Files: `src/avk/products/registry.py` (`companion_tables = ()`, `companion_adapter`),
+  `src/avk/inputs/validation.py` (`validate_companions`, `companion_orphans` defaults),
+  `src/avk/runs/check.py` (`_prepare`: read companions once into `CheckReport.companions`,
+  validate per batch, prepare with `companion_adapter`, orphan check after the whole
+  book), `tests/unit_linked/test_companions.py`.
+- Tests: `test_companions.py` → 6 passed (6 failed before); `test_demo_suite.py`,
+  `test_parquet.py` and `tests/unit_linked` → 127 passed (existing saved results unchanged).
+- Decisions:
+  - Deviation (additive): `PolicyValidator.companion_orphans(known, companions)`. A
+    streamed batch sees only its own policies, so holdings naming no policy are
+    reported once after all batches; `known(numbers)` tests membership in the book
+    (CSV: the prepared `Policy_Number`; Parquet: the existing SQLite id index).
+  - Companion validation runs only after the policy rows pass, and its errors are
+    raised as one `InputError` before any preparation.
+- Next: Task 5 (validation).
