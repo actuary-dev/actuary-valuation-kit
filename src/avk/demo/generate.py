@@ -11,6 +11,8 @@ import numpy as np
 import polars as pl
 import yaml  # type: ignore[import-untyped]
 
+from avk.demo import unit_linked
+
 PRODUCTS = (
     "TERM",
     "ACCIDENTAL_DEATH_RIDER",
@@ -228,9 +230,11 @@ def basis(folder: Path) -> dict[str, dict[str, str]]:
                 "lapses_after_payment_term": float(product == "CREDIT_LIFE"),
                 "renewal_premium_expense_after_payment_term": float(product == "CREDIT_LIFE"),
             }.items()
-        ],
+        ]
+        + unit_linked.parameter_rows(),
         "parameters",
     )
+    unit_linked.ul_basis(put, mortality)
     pl.DataFrame(
         [
             {"cohort": str(cohort), "month": f"{y}-{m:02}", "value": (1.035 ** (1.0 / 12)) - 1}
@@ -378,7 +382,11 @@ def stress(folder: Path, product: str) -> dict[str, Any]:
 def generate(folder: Path, product: str, count: int, seed: int) -> Path:
     """Generate inputs/configs; output paths always belong to the caller's folder."""
     folder = folder.resolve()
-    locations = basis(folder / "basis")
+    locations = {
+        name: location
+        for name, location in basis(folder / "basis").items()
+        if name not in unit_linked.TABLES
+    }
     policies = book(product, count, seed)
     path = folder / "policies.csv"
     policies.write_csv(path)

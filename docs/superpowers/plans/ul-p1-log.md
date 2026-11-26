@@ -32,3 +32,29 @@ Plan: `docs/superpowers/plans/2026-11-26-ul-p1-inputs.md`. Branch: `claude/ul-p1
 - Separate commit `3c01e3f`: the base commit's plan file failed `ruff format --check`
   (Python code blocks in Markdown); reformatted, content unchanged.
 - Next: Task 3 (demo basis tables).
+
+## Task 3: demo basis tables — done
+
+- Files: new `src/avk/demo/unit_linked.py` (fund universe, variants, regimes, scales,
+  rates, parameters, `ul_basis(put, mortality)`), `src/avk/demo/generate.py` (calls it,
+  appends UNIT_LINKED parameter rows, keeps UL tables out of other products' configs),
+  `src/avk/demo/README.md`, eleven new `examples/demo/basis/*ul*.csv` files and 27
+  appended rows in `examples/demo/basis/product_parameters.csv`,
+  `tests/unit_linked/test_demo_basis.py`.
+- Tests: `uv run pytest tests/unit_linked/test_demo_basis.py -q` → 6 passed (6 failed
+  against the old generator); `tests/regression/test_demo_suite.py`,
+  `tests/regression/test_demo_inputs.py` and `tests/unit_linked` → 144 passed.
+- Decisions:
+  - Existing basis files compared with the parity helper, as the repository's own test
+    does: on Windows `exp()` differs in the last digit from the committed (Linux) files.
+    Existing committed files were not rewritten.
+  - Variant ids 0-5 in plan order; regime ids IRDAI_2024 0, UNCAPPED 1.
+  - Invented scales: WEALTH_T2 allocation 5/4/4/3/3%, 1.5% to year 10, admin 250/200,
+    loyalty 0.2% from year 6, booster 1% every fifth year from 10; MATURITY_GUARANTEE
+    allocation 7/5/5/4/4%, 2% to 10, 1% after, admin 220; SINGLE 3% flat (a flat scale
+    keeps the first-five-year ratio rule meaningful), admin 150; LIMITED_PAY_ROC
+    8/6/6/4/4%, admin 300 then 250, 3% escalation; INVESTMENT_BOND 1% and 100, no
+    discontinuance charge. Every capped variant uses the cap discontinuance scale.
+  - UNCAPPED: 1 for rate maxima, 1e12 for amounts and ratios, 0 for minimums.
+  - Lapse years 2-4 are 7/6/5%, years 6-10 9/8.25/7.5/6.75/6%.
+- Next: Task 4 (companion-table hook).
