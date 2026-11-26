@@ -99,3 +99,22 @@ Plan: `docs/superpowers/plans/2026-11-26-ul-p1-inputs.md`. Branch: `claude/ul-p1
     columns integral, code columns (Profitability Group, Transition Approach) in range,
     Measurement Model VFA or GMM, variant single_premium agrees with frequency 0.
 - Next: Task 6 (preparation).
+
+## Task 6: model-point preparation — done
+
+- Files: `src/avk/products/unit_linked/preparation.py` (`UnitLinkedModelPointAdapter`),
+  `src/avk/products/unit_linked/formulas.py` (committed here because it spells the
+  field contract `FIELDS`), `tests/unit_linked/test_preparation.py`.
+- Test: `uv run pytest tests/unit_linked/test_preparation.py -q` → 8 passed.
+- Decisions:
+  - The field list lives in `formulas.py` (formula modules may import only the authoring
+    API); `preparation.PREPARED_FIELDS` is that tuple. 32 policy fields, 26 `V_*`, 3
+    `R_*`, 13 DPF fields, 5 x 18 slot fields = 164 fields, exactly the plan's list.
+  - `Policy_Status` is Float64 (the streamed spool casts it so); `Gender_Code`,
+    `Smoker_Code`, `Charge_Column`, ids, terms, counts and `Fund_k_Present`/`Fund_k_Fund_Index`
+    are Int64; everything else Float64. `V_*` keep the table's float values.
+  - `DPF_FMC`/`DPF_Alpha`/`DPF_W_*` come from the DPF row of `ul_funds` for every policy;
+    `DPF_Value` is Units x DPF unit price for the status-1 policy, else 0.
+  - Table rules (`check_tables`) run once per adapter; policy-against-table rules per batch.
+  - The run-layer Parquet parity and cross-batch orphan tests are in Task 7's test file.
+- Next: Task 7 (skeleton product, factory, demo book).
