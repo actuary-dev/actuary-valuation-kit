@@ -118,3 +118,32 @@ Plan: `docs/superpowers/plans/2026-11-26-ul-p1-inputs.md`. Branch: `claude/ul-p1
   - Table rules (`check_tables`) run once per adapter; policy-against-table rules per batch.
   - The run-layer Parquet parity and cross-batch orphan tests are in Task 7's test file.
 - Next: Task 7 (skeleton product, factory, demo book).
+
+## Task 7: skeleton product, factory, registration and demo book — done
+
+- Files: `src/avk/products/unit_linked/{formulas,factory,output_columns}.py`,
+  `src/avk/products/registry.py` (registers `UnitLinkedFactory`), new
+  `src/avk/demo/unit_linked_book.py` (`ul_book`, `generate_ul`), `src/avk/demo/generate.py`
+  (UNIT_LINKED branch and CLI choice; `PRODUCTS` unchanged), `src/avk/demo/README.md`,
+  `tests/unit_linked/test_skeleton_run.py`. `src/avk/cli.py` untouched (the CLI takes its
+  choices from `add_generate_arguments`).
+- Tests: `uv run pytest tests/unit_linked -q` → 135 passed (skeleton tests 11, 3 of which
+  failed with the registration removed). Ruff, format, mypy, import contracts pass.
+- Behaviour: `avk compile UNIT_LINKED` (5 columns, 1 pass, bases reserving/be/mc);
+  200-policy demo passes `avk check`; `avk run` writes `funds_opening_unit_fund` and
+  `funds_opening_dpf_fund` (aggregate and seriatim) whose step-0 values equal
+  Units x unit price over the holdings (parity money class); StressCapital and IFRS17
+  fail with `UNIT_LINKED supports the Valuation run type only`.
+- Decisions:
+  - Output names `funds_opening_unit_fund`, `funds_opening_dpf_fund`, basis-independent.
+  - Keyed and year-key tables load as `UnitLinkedTableAssumption` (factory module).
+  - Year-key bindings: `ul_charge_scales/<field>` (keymap Variant_Id),
+    `ul_disc_charge_caps/<field>` and `ul_riy_caps` (keymap Regime_Id), policy-year axis
+    clamped both ends. Channel tables read value column `rate`.
+  - Demo book (10k seed 209): status 1 3.2%, status 2 4.5%; 1-5 funds 33/34/19/10/5%;
+    single-premium variants ULIP_SINGLE and UL_INVESTMENT_BOND, limited pay ROC or
+    CLASSIC, regular CLASSIC/WEALTH_T2/MATURITY_GUARANTEE; currency INR; Policy Numbers
+    `UL0000001`...; status-2 cessation within the last 36 months after the lock-in.
+  - `generate(folder, "UNIT_LINKED", ...)` writes policies.csv, policy_funds.csv, basis/
+    and valuation.json only.
+- Next: Task 8 (documentation) and the full check list.

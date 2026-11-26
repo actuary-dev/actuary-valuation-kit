@@ -11,7 +11,8 @@ import numpy as np
 import polars as pl
 import yaml  # type: ignore[import-untyped]
 
-from avk.demo import unit_linked
+from avk.demo import unit_linked, unit_linked_book
+from avk.products.unit_linked.bindings import CODE as UL_CODE
 
 PRODUCTS = (
     "TERM",
@@ -382,6 +383,8 @@ def stress(folder: Path, product: str) -> dict[str, Any]:
 def generate(folder: Path, product: str, count: int, seed: int) -> Path:
     """Generate inputs/configs; output paths always belong to the caller's folder."""
     folder = folder.resolve()
+    if product == UL_CODE:
+        return unit_linked_book.generate_ul(folder, count, seed, basis(folder / "basis"), HORIZON)
     locations = {
         name: location
         for name, location in basis(folder / "basis").items()
@@ -514,7 +517,7 @@ def _positive_count(raw: str) -> int:
 
 def add_generate_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("folder", type=Path)
-    parser.add_argument("--product", required=True, choices=PRODUCTS)
+    parser.add_argument("--product", required=True, choices=(*PRODUCTS, UL_CODE))
     parser.add_argument("--count", type=_positive_count, default=10000)
     parser.add_argument("--seed", type=int, default=209)
 

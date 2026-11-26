@@ -107,6 +107,7 @@ class ProductRegistry:
             DisabilityFactory,
         )
         from avk.products.term.factory import TermFactory
+        from avk.products.unit_linked.factory import UnitLinkedFactory
 
         registry = cls()
         registry.register(TermFactory())
@@ -114,6 +115,7 @@ class ProductRegistry:
         registry.register(CriticalIllnessFactory())
         registry.register(DisabilityFactory())
         registry.register(CreditLifeFactory())
+        registry.register(UnitLinkedFactory())
         for entry in entry_points(group="avk.products"):
             try:
                 loaded = entry.load()
