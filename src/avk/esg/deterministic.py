@@ -1,6 +1,8 @@
 """Single-path annual-effective interest conversion with product-declared timing."""
 
 from collections.abc import Mapping, Sequence
+from pathlib import Path
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -34,10 +36,29 @@ def _place(
     return result
 
 
+def placed_months(
+    horizon: int, variable: ScenarioVariable, valuation_month: int
+) -> npt.NDArray[np.bool_]:
+    """Months eligible for return overlays, independent of the curve's actual rates."""
+    mask = _place(np.ones(horizon), horizon, variable, valuation_month).astype(np.bool_)
+    mask[0] = False
+    return mask
+
+
 class DeterministicCurveESG(EconomicScenarioGenerator):
     """One path: each declared variable is its curve's rate under the declared timing."""
 
-    def __init__(self, variables: Sequence[ScenarioVariable]) -> None:
+    SETTINGS: frozenset[str] = frozenset()
+
+    def __init__(
+        self,
+        variables: Sequence[ScenarioVariable],
+        settings: Mapping[str, Any] | None = None,
+        *,
+        base: Path | None = None,
+    ) -> None:
+        if settings:
+            raise InputError(f"{type(self).__name__} does not accept Settings")
         if not variables:
             raise InputError("The product declares no scenario variables")
         self.variables = tuple(variables)

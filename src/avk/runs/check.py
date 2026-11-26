@@ -18,6 +18,7 @@ import polars as pl
 from avk.assumptions.context import (
     AssumptionContext,
     AssumptionSpec,
+    ScenarioVariable,
     build_context,
     load_declared,
 )
@@ -121,6 +122,27 @@ def _resolve_inputs(cfg: RunConfig, base_root: Path) -> ResolvedInputs:
     if cfg.inputs is None:
         raise ConfigError("Inputs is required. Set Inputs.Tables to the table list.")
     return Sources.resolve(cfg.inputs, base=cfg._path.parent if cfg._path else base_root)
+
+
+def _scenario_variables(cfg: RunConfig, spec: AssumptionSpec) -> tuple[ScenarioVariable, ...]:
+    return tuple(
+        replace(variable, fiscal_start_month=cfg.fiscal_start_month)
+        if variable.fiscal_start_month == "fiscal_start_month"
+        else variable
+        for variable in spec.scenario_variables
+    )
+
+
+def _scenario_curves(
+    spec: AssumptionSpec, assumptions: dict[str, TabularAssumption]
+) -> dict[str, InterestCurveAssumption]:
+    curves: dict[str, InterestCurveAssumption] = {}
+    for name in sorted({variable.curve for variable in spec.scenario_variables}):
+        curve = assumptions.get(name)
+        if not isinstance(curve, InterestCurveAssumption):
+            raise ConfigError(f"{spec.product}: {name} is not an interest curve")
+        curves[name] = curve
+    return curves
 
 
 def _check_declarations(code: str, spec: AssumptionSpec, declared: Manifest) -> None:
@@ -264,12 +286,7 @@ def _check_single(
             ):
                 spec.cache[name] = assumption
     # Strict parameters first retains the existing failure order and diagnostics.
-    spec.scenario_variables = tuple(
-        replace(variable, fiscal_start_month=cfg.fiscal_start_month)
-        if variable.fiscal_start_month == "fiscal_start_month"
-        else variable
-        for variable in spec.scenario_variables
-    )
+    spec.scenario_variables = _scenario_variables(cfg, spec)
     parameters = spec.load_parameters(inputs)
     # The input gate validates everything the definition declares (bound); each basis
     # context then holds exactly what that basis's formulas reach (the IR's manifest).
@@ -281,12 +298,7 @@ def _check_single(
         parameters.require(name)
     # The generator reads the interest curves its scenario variables name; schedule curves are
     # read by formulas instead.
-    curves: dict[str, InterestCurveAssumption] = {}
-    for name in sorted({variable.curve for variable in spec.scenario_variables}):
-        curve = assumptions.get(name)
-        if not isinstance(curve, InterestCurveAssumption):
-            raise ConfigError(f"{factory.code}: {name} is not an interest curve")
-        curves[name] = curve
+    curves = _scenario_curves(spec, assumptions)
     for basis in ir.bases:
         context = build_context(spec, ir.manifest[basis], basis, inputs, cfg)
         old = shared.contexts[basis] if shared is not None else None

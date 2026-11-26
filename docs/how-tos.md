@@ -48,6 +48,12 @@ The demo uses 0.08 direct RA ratio and -0.05 held RA ratio.
 roll-forward. The generated example moves from 2025-12-31 to 2026-06-30.
 See [the bridge notebook](../notebooks/rollforward.ipynb).
 
+## Economic scenarios
+
+Generate seeded paths, export them to Parquet, or build deterministic
+illustration and shock paths with `avk scenarios`. See the worked TERM
+example and the settings and file layouts in [economic scenarios](scenarios.md).
+
 ## Python API
 This complete script runs an invented book and prints the files written:
 
