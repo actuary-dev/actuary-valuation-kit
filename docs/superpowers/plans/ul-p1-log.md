@@ -147,3 +147,64 @@ Plan: `docs/superpowers/plans/2026-11-26-ul-p1-inputs.md`. Branch: `claude/ul-p1
   - `generate(folder, "UNIT_LINKED", ...)` writes policies.csv, policy_funds.csv, basis/
     and valuation.json only.
 - Next: Task 8 (documentation) and the full check list.
+
+## Task 8: documentation — done
+
+- Files: new `docs/products/unit-linked.md` (every column, field, code and cap rule;
+  how UNCAPPED turns caps off; scenario variables and fund returns; what P2 adds),
+  `docs/inputs/public-formats.md` (Task 2), `README.md`, `CHANGELOG.md`, regenerated
+  `docs/reference/output-columns.md` (stale after the Task 7 commit; fixed here).
+- Test: `uv run pytest tests/regression/test_documentation.py -q` → 2 passed.
+
+## Project checks (CLAUDE.md), at commit 168888f
+
+| Check | Result |
+|---|---|
+| `uv sync --locked --extra ui --extra sql --dev` (UV_LINK_MODE=copy) | pass |
+| `uv run ruff check .` | All checks passed |
+| `uv run ruff format --check .` | 194 files already formatted |
+| `uv run mypy` | no issues in 125 source files |
+| `uv run lint-imports` | 14 kept, 0 broken |
+| `uv run pytest` | 302 passed, 8 deselected, 1 warning (37 min) |
+| `uv run python scripts/generate_reference.py --check` | current |
+| `uv run python scripts/check_clean_install.py` | pass |
+| `uv build` | sdist and wheel built |
+
+The one warning is the existing Windows Parquet spool cleanup (`shutil` unlinking an
+open mapping) during a streamed test; it predates P1 code paths' use of it.
+`tests/saved` untouched; `tests/regression/test_demo_suite.py` passes unchanged.
+
+## Deviations from "Interfaces fixed by this plan"
+
+1. `FieldRule` has two extra defaulted fields after the six fixed ones: `minimum_open`,
+   `meaning`.
+2. `PolicyValidator.companion_orphans(known, companions)` added beside
+   `validate_companions`; orphan holdings are reported once after every batch.
+3. `check_policies_against_tables(policies, holdings, tables)` takes raw rows, and the
+   fund-universe holding rules (fund exists, `MAX_FUND_SLOTS`, DPF rules,
+   non-selectable allocation) run there.
+4. The prepared-field tuple is spelled in `formulas.py` (`FIELDS`) because formula
+   modules may import only the authoring API; `preparation.PREPARED_FIELDS` is it.
+5. Branch is `claude/ul-p1-inputs-d90104`, not `ul/p1-inputs`.
+
+Field names, table and format names and the companion hook signatures are as planned.
+
+## Open points for P2a
+
+- Read the slot fields exactly: `Fund_k_{Present, Fund_Index, Allocation, Value, FMC,
+  Alpha, W_<asset>, Premiums_Allocated, Guaranteed_Price}`, k = 1..5; empty slots are
+  zeros with `Fund_Index` -1. `Policy_Status` is Float64.
+- Year-key bindings are `ul_charge_scales/<field>` (keymap `Variant_Id`),
+  `ul_disc_charge_caps/<field>` and `ul_riy_caps` (keymap `Regime_Id`), policy-year axis
+  clamped; channel tables read value `rate` by `Distribution_Channel`;
+  `mortality_charges_ul` by age and `Charge_Column`. Move each binding from the
+  `UnitLinked` class into the component that reads it.
+- The keyed tables (`ul_funds`, `ul_variants`, `ul_regulatory_caps`) have string keys
+  and cannot be lowered into a kernel; their values reach formulas only through the
+  prepared fields.
+- The final policy year has no surrender (model spec); the demo lapse table does not
+  encode that; it is a formula rule.
+- Demo history fields are approximate (invented); do not reconcile against them.
+- Deferred minors: per-batch holdings filtering is O(batches x holdings); mixed
+  Policy Number dtypes give a "hold no fund" message.
+- `uv run pytest -m slow` (100k product regressions): 6 passed (53 min).
