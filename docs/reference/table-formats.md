@@ -19,3 +19,5 @@ The format is selected by `Inputs.Replace.<logical table>.Format`.
 | `avk_opening_v1` | `avk.inputs.public_formats.opening_balances` |
 | `avk_parameters_v1` | `avk.inputs.public_formats.parameters` |
 | `avk_stresses_v1` | `avk.inputs.public_formats.stresses` |
+| `avk_ul_keyed_v1` | `avk.inputs.public_formats.keyed` |
+| `avk_ul_year_key_v1` | `avk.inputs.public_formats.year_key` |

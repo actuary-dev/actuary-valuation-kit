@@ -64,4 +64,14 @@ BUILTIN_FORMATS = {
     **{f"expenses_{f}": "avk_expenses_v1" for f in ("term", "rider", "credit_life")},
     **{f"ifrs17_initial_expenses_{f}": "avk_expenses_v1" for f in ("term", "rider", "credit_life")},
     **{f"ifrs17_renewal_expenses_{f}": "avk_expenses_v1" for f in ("term", "rider", "credit_life")},
+    **{name: "avk_ul_keyed_v1" for name in ("ul_funds", "ul_variants", "ul_regulatory_caps")},
+    **{
+        name: "avk_ul_year_key_v1"
+        for name in ("ul_charge_scales", "ul_disc_charge_caps", "ul_riy_caps")
+    },
+    "mortality_charges_ul": "avk_mortality_v1",
+    "lapse_rates_ul": "avk_lapse_v1",
+    "partial_withdrawals_ul": "avk_lapse_v1",
+    "commissions_ul": "avk_commission_v1",
+    "ul_asset_returns": "avk_curves_v1",
 }

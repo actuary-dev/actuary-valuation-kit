@@ -312,7 +312,62 @@ def opening_balances(frame: pl.DataFrame, spec: FormatSpec) -> Table:
     )
 
 
+def keyed(frame: pl.DataFrame, spec: FormatSpec) -> Table:
+    """Unit-linked tables keyed by a code: one value per key and declared field.
+
+    Keys are exact strings (no stripping or case folding), sorted; the file holds exactly
+    the declared fields."""
+    exact(frame, ("key", "field", "value"), spec)
+    frame = frame.with_columns(pl.col("key").cast(pl.String), pl.col("field").cast(pl.String))
+    unique(frame, ["key", "field"], spec)
+    numbers(frame, ("value",), spec)
+    fields = tuple(field_name(c) for c in spec.columns)
+    present = set(frame["field"])
+    if present != set(fields):
+        unknown = sorted(present - set(fields))
+        if unknown:
+            raise InputError(f"{spec.name}: unknown field(s) {unknown}; require exactly {fields}")
+        raise InputError(f"{spec.name}: require exactly fields {fields}")
+    keys = tuple(sorted(frame["key"].unique()))
+    if frame.height != len(keys) * len(fields):
+        raise InputError(f"{spec.name}: missing key/field combination")
+    pivoted = frame.pivot(on="field", index="key", values="value").sort("key")
+    values = numbers(pivoted, fields, spec)
+    return table(spec, values, (key_axis("key", keys), key_axis("field", spec.columns)))
+
+
+def year_key(frame: pl.DataFrame, spec: FormatSpec) -> Table:
+    """Unit-linked tables by policy year and integer key: the one declared field."""
+    if len(spec.columns) != 1:
+        raise InputError(f"{spec.name}: a year-key binding must select exactly one field")
+    exact(frame, ("year", "key", "field", "value"), spec)
+    numbers(frame, ("year", "key"), spec)
+    frame = frame.with_columns(
+        pl.col("year", "key").cast(pl.Float64), pl.col("field").cast(pl.String)
+    )
+    unique(frame, ["year", "key", "field"], spec)
+    numbers(frame, ("value",), spec)
+    keys = np.unique(numbers(frame, ("key",), spec))
+    if (keys < 0).any() or not np.equal(keys, np.floor(keys)).all():
+        raise InputError(f"{spec.name}: key must be a nonnegative integer")
+    years = consecutive(frame, "year", 1, spec)
+    selected = frame.filter(pl.col("field") == field_name(spec.columns[0]))
+    if selected.height != len(years) * len(keys):
+        raise InputError(f"{spec.name}: missing year/key combination")
+    values = numbers(selected.sort("year", "key"), ("value",), spec)
+    return table(
+        spec,
+        values.reshape(len(years), len(keys)),
+        (
+            integer_axis("policy_year", 1, len(years), spec.axes[0]),
+            key_axis("key", tuple(int(k) for k in keys)),
+        ),
+    )
+
+
 PUBLIC_READERS = {
+    "avk_ul_keyed_v1": keyed,
+    "avk_ul_year_key_v1": year_key,
     "avk_mortality_v1": age_rates,
     "avk_morbidity_v1": age_rates,
     "avk_lapse_v1": year_channel,
