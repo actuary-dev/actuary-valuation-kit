@@ -43,7 +43,7 @@ Environment facts learned:
 |---|---|---|---|---|---|---|
 | P0 design and tracking | merged | feature/unit-linked | main checkout | orchestrator | 021370e | design approved 2026-11-26 |
 | P1 inputs and contracts | running | claude/ul-p1-inputs-d90104 | `.claude\worktrees\ul-p1-inputs-d90104` (inside the main checkout) | Claude session `local_155c82e5-61a0-469c-8bf6-94630c380042` (ul-p1-inputs), Opus 5.5 medium | — | commits locally itself |
-| P4a scenario tooling | running | ul/p4a-scenarios | C:\avkwt\p4a (full clone, not a worktree) | Codex gpt-6.2-sol via `C:\avkwt\run_codex.sh`, prompt `C:\avkwt\prompts\p4a.md`, logs `C:\avkwt\logs\p4a-*` | — | Codex cannot commit; orchestrator commits after review |
+| P4a scenario tooling | merged | ul/p4a-scenarios | C:vkwt\p4a (full clone) | Codex gpt-6.2-sol | b5fb061 (merge 49b4238) | orchestrator re-ran checks: 220 passed, 14 contracts |
 | P2a unit engine | blocked by P1 | ul/p2a-unit-engine | C:\avkwt\p2a | Codex gpt-6.2-sol | — | |
 | P2b general fund and results | blocked by P2a | ul/p2b-results | C:\avkwt\p2b | Claude session, Opus 5.5 medium | — | |
 | P3 compliance (RIY, illustration) | blocked by P2b | ul/p3-compliance | C:\avkwt\p3 | Claude session, Sonnet 5.5 high | — | |
@@ -63,3 +63,5 @@ merged, blocked.
   calculations and IFRS 17 cohorting (design section 5.2).
 - 2026-11-26 P0 merged (design approved). P4a started in Codex (clone `C:\avkwt\p4a`,
   effort high). P1 started as Claude session ul-p1-inputs (Opus 5.5 medium).
+- 2026-11-26 P4a merged into feature/unit-linked (49b4238) after review; Codex report:
+  all checks incl. slow suite passed; orchestrator re-ran lint/format/mypy/imports/reference/default pytest (220 passed).
