@@ -51,7 +51,7 @@ Environment facts learned:
 | P4a scenario tooling | merged | ul/p4a-scenarios | `C:\avkwt\p4a` (full clone) | Codex gpt-6.2-sol | b5fb061 (merge 49b4238) | orchestrator re-ran checks: 220 passed, 14 contracts |
 | P2a unit engine | merged | ul/p2a-unit-engine | `C:\avkwt\p2a` (full clone) | Codex gpt-6.2-sol, effort high, prompts `C:\avkwt\prompts\p2a.md`, then `p2a-fix.md` | 7e9e045 (merge 881f4f0) | log `docs/superpowers/plans/ul-p2a-log.md` |
 | P2b general fund and results | running | app worktree branch (step 0 re-bases it on feature/unit-linked ≥ 4d4e86f) | app worktree | Claude session `local_32b69ad7-2b4c-43cc-b350-eb0c78dfe618`, Opus 5.5 medium | — | plan `2026-11-26-ul-p2b-results.md`; log `ul-p2b-log.md` |
-| P3 compliance (RIY, illustration) | running (except the general-fund wiring of residual additions, after P2b merges) | app worktree branch ul-p3-compliance | app worktree | Claude session `local_9a05dfb5-71ef-4db0-9ce3-440ffd29d952`, Sonnet 5.5 high | — | writes its own plan `2026-11-27-ul-p3-compliance.md`; log `ul-p3-log.md` |
+| P3 compliance (RIY, illustration) | merged; general-fund wiring of residual additions waits for P2b | claude/ul-p3-compliance-c1cbcb | app worktree | Claude session `local_9a05dfb5-71ef-4db0-9ce3-440ffd29d952`, Sonnet 5.5 high | cafa52a (merge 1c3e888) | plan `2026-11-27-ul-p3-compliance.md`; log `ul-p3-log.md` |
 | P4b stochastic results, part 1 | running | ul/p4b-stochastic | `C:\avkwt\p4b` (full clone) | Codex gpt-6.2-sol, effort high, prompt `C:\avkwt\prompts\p4b.md` | — | summaries, TVOG helper, dynamic lapse (own table, off by default), tutorial; TVOG wiring to P2b columns later |
 | P5 IFRS 17 VFA and stress capital | plan merged (3f0f164); build blocked by P2b | ul/p5-ifrs17 | — | plan by session `local_79cec2d5-2396-4b34-9c21-8ea34d4a8aca` | — | plan `2026-11-27-ul-p5-ifrs17-stress.md` (10 tasks) |
 | P6a top-ups, fund strategies, highest NAV | running | ul/p6a-unit-features | `C:\avkwt\p6a` (full clone) | Codex gpt-6.2-sol, effort high, prompt `C:\avkwt\prompts\p6a.md` | — | all features off by default; demo valuation must stay byte-identical |
@@ -110,3 +110,11 @@ merged, blocked.
     not in the group key; the factor-based CRNHR kept; no partial-withdrawal lapse shock;
     the teaching calibration accepted.
   - P6b: decided when P6b starts.
+- 2026-11-28 P3 merged (1c3e888) after review. The session reported every CLAUDE.md check
+  passing, 463 default tests (47 new), and `tests/saved` untouched; it did not run the slow
+  suite. The orchestrator re-ran the static and generator checks and the UL tests, and
+  reworded two doc sentences that were close to the product specification. Design note:
+  `illustration.py` is a separate numpy roll of one life's units, tied to the engine by a
+  reconciliation test, so later unit-engine features (P6a, P6b) must update it or state
+  that it excludes them. Open: residual additions are reported but not yet in the general
+  fund and the units; this follows the P2b merge.

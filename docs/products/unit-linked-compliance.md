@@ -58,8 +58,8 @@ measurement points: a regular-premium policy always breaches a cap in its first 
 
 ## Residual additions
 
-Where the RIY of a policy would exceed the cap, the insurer credits units so that it does
-not. The first five policy years must comply by design: a breach at year five or earlier is a
+When a policy's RIY would go above its cap, extra units are added to bring it back
+within the cap. The first five policy years must comply by design: a breach at year five or earlier is a
 design failure, whatever the variant allows. Additions are possible from the sixth
 anniversary and only for a variant with `riy_additions_on = 1`.
 
@@ -151,8 +151,8 @@ Rows are CSV only: the repository has no spreadsheet writer. Amounts are not rou
 ## Limits
 
 - One life, fixed gross return: no decrements, policyholder options, switches, top-ups or
-  lifecycle strategies. A stochastic test would be needed if a guarantee were added to the
-  yield.
+  lifecycle strategies. A yield guarantee would call for testing across stochastic
+  scenarios instead.
 - The additions and the illustration use the contract as sold. They do not use the actual
   fund history of an in-force policy.
 - The investment guarantee charge and the guarantee itself are outside the RIY basis.
