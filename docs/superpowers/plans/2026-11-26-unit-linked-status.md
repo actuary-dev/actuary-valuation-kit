@@ -36,6 +36,10 @@ Environment facts learned:
   `run_codex.sh`.
 - Claude sessions get app-managed worktrees under `.claude\worktrees\` and commit
   themselves.
+- The app refuses to start a nested session on a turn begun by a background-task event
+  (for example a Codex completion). Such a turn can only propose a card, and the card
+  drops `source_branch`, so the brief must check its base branch. Codex runs have no such
+  limit.
 
 ## Phase table
 
@@ -45,7 +49,7 @@ Environment facts learned:
 | P1 inputs and contracts | merged | claude/ul-p1-inputs-d90104 | `.claude\worktrees\ul-p1-inputs-d90104` (inside the main checkout) | Claude session `local_155c82e5-61a0-469c-8bf6-94630c380042` (ul-p1-inputs), Opus 5.5 medium | f6e11af (merge 181a503) | orchestrator fix ed0b855 (spool file handle) |
 | P4a scenario tooling | merged | ul/p4a-scenarios | `C:\avkwt\p4a` (full clone) | Codex gpt-6.2-sol | b5fb061 (merge 49b4238) | orchestrator re-ran checks: 220 passed, 14 contracts |
 | P2a unit engine | merged | ul/p2a-unit-engine | `C:\avkwt\p2a` (full clone) | Codex gpt-6.2-sol, effort high, prompts `C:\avkwt\prompts\p2a.md`, then `p2a-fix.md` | 7e9e045 (merge 881f4f0) | log `docs/superpowers/plans/ul-p2a-log.md` |
-| P2b general fund and results | blocked by P2a (plan d3c8ed1) | ul/p2b-results | app worktree | Claude session, Opus 5.5 medium | — | plan `2026-11-26-ul-p2b-results.md` |
+| P2b general fund and results | ready: waiting for the maintainer to start the card | app worktree branch (cut from feature/unit-linked ≥ 4d4e86f) | app worktree | Claude session ul-p2b-results, Opus 5.5 medium (card task_0be661ae) | — | plan `2026-11-26-ul-p2b-results.md` |
 | P3 compliance (RIY, illustration) | blocked by P2b | ul/p3-compliance | C:\avkwt\p3 | Claude session, Sonnet 5.5 high | — | |
 | P4b stochastic results | blocked by P2b, P4a | ul/p4b-stochastic | C:\avkwt\p4b | Codex gpt-6.2-sol | — | |
 | P5 IFRS 17 VFA and stress capital | blocked by P2b | ul/p5-ifrs17 | C:\avkwt\p5 | Claude session, Opus 5.5 medium | — | |
@@ -87,3 +91,6 @@ merged, blocked.
   Merged into feature/unit-linked (881f4f0). Orchestrator re-ran ruff, format, mypy (135),
   lint-imports (14 kept), reference and fund-slot generator checks, and the UL and demo
   tests (245 passed). No copied spec text.
+- 2026-11-27 P2b proposed as a session card (task_0be661ae). The app starts nested sessions
+  only on a turn the maintainer began; on a turn started by a background-task event it
+  allows only a card the maintainer clicks.
