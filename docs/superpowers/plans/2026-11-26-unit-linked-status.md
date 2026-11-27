@@ -42,10 +42,10 @@ Environment facts learned:
 | Phase | Status | Branch | Worktree | Worker / id | Last checkpoint | Notes |
 |---|---|---|---|---|---|---|
 | P0 design and tracking | merged | feature/unit-linked | main checkout | orchestrator | 021370e | design approved 2026-11-26 |
-| P1 inputs and contracts | in review (worker done: 302 tests + slow suite pass, last commit f6e11af) | claude/ul-p1-inputs-d90104 | `.claude\worktrees\ul-p1-inputs-d90104` (inside the main checkout) | Claude session `local_155c82e5-61a0-469c-8bf6-94630c380042` (ul-p1-inputs), Opus 5.5 medium | — | commits locally itself |
+| P1 inputs and contracts | merged | claude/ul-p1-inputs-d90104 | `.claude\worktrees\ul-p1-inputs-d90104` (inside the main checkout) | Claude session `local_155c82e5-61a0-469c-8bf6-94630c380042` (ul-p1-inputs), Opus 5.5 medium | f6e11af (merge 181a503) | orchestrator fix ed0b855 (spool file handle) |
 | P4a scenario tooling | merged | ul/p4a-scenarios | `C:\avkwt\p4a` (full clone) | Codex gpt-6.2-sol | b5fb061 (merge 49b4238) | orchestrator re-ran checks: 220 passed, 14 contracts |
-| P2a unit engine | blocked by P1 | ul/p2a-unit-engine | C:\avkwt\p2a | Codex gpt-6.2-sol | — | |
-| P2b general fund and results | blocked by P2a | ul/p2b-results | C:\avkwt\p2b | Claude session, Opus 5.5 medium | — | |
+| P2a unit engine | running | ul/p2a-unit-engine | `C:\avkwt\p2a` (full clone) | Codex gpt-6.2-sol, effort high, prompt `C:\avkwt\prompts\p2a.md` | — | log `docs/superpowers/plans/ul-p2a-log.md` in the clone |
+| P2b general fund and results | blocked by P2a (plan d3c8ed1) | ul/p2b-results | app worktree | Claude session, Opus 5.5 medium | — | plan `2026-11-26-ul-p2b-results.md` |
 | P3 compliance (RIY, illustration) | blocked by P2b | ul/p3-compliance | C:\avkwt\p3 | Claude session, Sonnet 5.5 high | — | |
 | P4b stochastic results | blocked by P2b, P4a | ul/p4b-stochastic | C:\avkwt\p4b | Codex gpt-6.2-sol | — | |
 | P5 IFRS 17 VFA and stress capital | blocked by P2b | ul/p5-ifrs17 | C:\avkwt\p5 | Claude session, Opus 5.5 medium | — | |
@@ -65,3 +65,12 @@ merged, blocked.
   effort high). P1 started as Claude session ul-p1-inputs (Opus 5.5 medium).
 - 2026-11-26 P4a merged into feature/unit-linked (49b4238) after review; Codex report:
   all checks incl. slow suite passed; orchestrator re-ran lint/format/mypy/imports/reference/default pytest (220 passed).
+- 2026-11-27 Maintainer: continue in this session; merge each reviewed phase and start the
+  next without waiting for approval.
+- 2026-11-27 P1 merged (181a503) after review: CHANGELOG conflict resolved (both
+  entries); `check.py` auto-merged with P4a. Orchestrator re-ran ruff, format, mypy (128),
+  lint-imports (14 kept), reference check and the UL, ESG and demo-suite tests (230
+  passed). A scan found no text copied from the private specs. Fix ed0b855: a failed
+  streamed check left the spool file open on Windows (pyarrow keeps a path-opened IPC
+  file open after its block); the test now fails without the fix.
+- 2026-11-27 P2b plan written (d3c8ed1). P2a started in Codex (clone `C:\avkwt\p2a`).
