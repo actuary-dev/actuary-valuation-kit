@@ -3,6 +3,7 @@
 from datetime import date
 from pathlib import Path
 
+import numpy as np
 import polars as pl
 import pytest
 
@@ -278,3 +279,31 @@ class Diagnostics:
     def table(self, name, row, key):
         table = self.report.tables[name]
         return table.values[row - table.axes[0].start, table.axes[1].keys.index(key)]
+
+
+def parity_check(folder, actual, expected, classes="value"):
+    """Compare per-policy-month grids with `avk.testing.parity` (per-policy scale)."""
+    from avk.testing.parity import compare
+
+    def frame(grids):
+        first = np.atleast_2d(next(iter(grids.values())))
+        policies, months = first.shape
+        data = {
+            "Policy_Number": np.repeat([f"P{i}" for i in range(policies)], months),
+            "Projection_Step": np.tile(np.arange(months), policies),
+        }
+        data.update({name: np.atleast_2d(values).ravel() for name, values in grids.items()})
+        return pl.DataFrame(data)
+
+    if isinstance(classes, str):
+        classes = dict.fromkeys(expected, classes)
+    classes = {"Policy_Number": "identifier", "Projection_Step": "identifier", **classes}
+    candidate, golden = folder / "candidate.parquet", folder / "golden.parquet"
+    frame(actual).write_parquet(candidate)
+    frame(expected).write_parquet(golden)
+    compare(candidate, golden, classes=classes).assert_ok()
+
+
+@pytest.fixture
+def assert_parity():
+    return parity_check

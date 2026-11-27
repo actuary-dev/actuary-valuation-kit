@@ -110,6 +110,10 @@ class UnitLinkedProduct(Product):
         """Maintenance expenses."""
 
     @abstractmethod
+    def coverage_units(self, t: float) -> float:
+        """Quantity of service provided, for IFRS 17."""
+
+    @abstractmethod
     def unit_reserve(self, t: float) -> float:
         """Expected value of the closing funds across policy states."""
 

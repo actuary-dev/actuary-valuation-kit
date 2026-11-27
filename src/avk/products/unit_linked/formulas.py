@@ -1,15 +1,19 @@
 """Unit-linked insurance: composition and model-point contract."""
 
-from avk.model.lang import Component, UnitLinkedProduct, curve, param, table
+from avk.model.lang import Component, UnitLinkedProduct, curve, table
 from avk.products.unit_linked.benefits import UnitSegment
+from avk.products.unit_linked.capital import UnitLinkedCapital
 from avk.products.unit_linked.decrements import UnitLinkedDecrements, year_table
 from avk.products.unit_linked.dpf import DiscontinuedFund
 from avk.products.unit_linked.expenses import UnitLinkedExpenses
 from avk.products.unit_linked.fund_slots import SLOTS, FundSlots
 from avk.products.unit_linked.general_fund import GeneralFundCashflows
 from avk.products.unit_linked.lives import UnitLinkedLives
+from avk.products.unit_linked.mcev import UnitLinkedMarketConsistentValue
 from avk.products.unit_linked.paid_up import PaidUpCashflows
 from avk.products.unit_linked.premiums import ActiveCashflows
+from avk.products.unit_linked.profit import UnitLinkedProfit, UnitSegmentProfit
+from avk.products.unit_linked.reserves import GeneralFundReserves
 
 # Formula modules import only the authoring API, so the model-point contract is spelled
 # here; tests tie ASSETS, VARIANT_FEATURES and SLOTS to `bindings` and `features`.
@@ -147,6 +151,11 @@ class UnitLinked(
     UnitSegment,
     UnitLinkedExpenses,
     GeneralFundCashflows,
+    GeneralFundReserves,
+    UnitSegmentProfit,
+    UnitLinkedProfit,
+    UnitLinkedCapital,
+    UnitLinkedMarketConsistentValue,
     UnitLinkedProduct,
 ):
     CODE, LABEL, BASES = "UNIT_LINKED", "Unit-linked insurance", ("reserving", "be", "mc")
@@ -163,14 +172,3 @@ class UnitLinked(
     riy_max = year_table("ul_riy_caps", "Regime_Id")
     interest_curve = curve("interest_rates")
     asset_returns = curve("ul_asset_returns")
-    tax_rate = param("Tax Rate")
-    profit_transfer_rate = param("profit_transfer_rate")
-    reserve_floor_days = param("reserve_floor_days")
-    revival_strain_dpf = param("revival_strain_dpf")
-    revival_strain_rpu = param("revival_strain_rpu")
-    reserve_capital_factor_no_guarantee = param("reserve_capital_factor_no_guarantee")
-    sar_capital_factor_no_guarantee = param("sar_capital_factor_no_guarantee")
-    reserve_capital_factor_guarantee = param("reserve_capital_factor_guarantee")
-    sar_capital_factor_guarantee = param("sar_capital_factor_guarantee")
-    target_capital_ratio = param("target_capital_ratio")
-    cost_of_capital_rate = param("cost_of_capital_rate")

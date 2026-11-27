@@ -721,3 +721,23 @@ class FundSlots(Component):
             + self.fund_4_close(t)
             + self.fund_5_close(t)
         )
+
+    def fund_growth_total(self, t):
+        """Investment return credited to the active slots per life."""
+        return (
+            (self.fund_1_after_charges(t) + self.fund_1_additions(t)) * self.fund_1_growth_rate(t)
+            + (self.fund_2_after_charges(t) + self.fund_2_additions(t)) * self.fund_2_growth_rate(t)
+            + (self.fund_3_after_charges(t) + self.fund_3_additions(t)) * self.fund_3_growth_rate(t)
+            + (self.fund_4_after_charges(t) + self.fund_4_additions(t)) * self.fund_4_growth_rate(t)
+            + (self.fund_5_after_charges(t) + self.fund_5_additions(t)) * self.fund_5_growth_rate(t)
+        )
+
+    def rpu_growth_total(self, t):
+        """Investment return credited to the opening paid-up slots."""
+        return (
+            self.rpu_1_after_charges(t) * self.fund_1_growth_rate(t)
+            + self.rpu_2_after_charges(t) * self.fund_2_growth_rate(t)
+            + self.rpu_3_after_charges(t) * self.fund_3_growth_rate(t)
+            + self.rpu_4_after_charges(t) * self.fund_4_growth_rate(t)
+            + self.rpu_5_after_charges(t) * self.fund_5_growth_rate(t)
+        )

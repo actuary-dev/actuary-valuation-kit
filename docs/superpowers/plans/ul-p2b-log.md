@@ -33,3 +33,50 @@ Work is committed locally for orchestrator review (never pushed).
     (commission table, expense parameters, Inflation, roi/vroi) moved onto those
     components; nothing is declared twice.
 - Next: Task 2, reserves and floors.
+
+## Tasks 2 to 4 — Reserves and floors, profit and capital, MCEV
+
+Implemented in one pass and committed together, because each cold compile takes about two
+minutes and the three components are composed into `UnitLinked` at the same time. Each
+task's tests were written before its module. Each test file ran against the compiled kernel.
+
+- Files `src/avk/products/unit_linked/{reserves,profit,capital,mcev,formulas,fund_slots}.py`,
+  `scripts/generate_ul_fund_slots.py` (two new generated totals, `fund_growth_total` and
+  `rpu_growth_total`), `src/avk/model/lang.py` (port `coverage_units`), `pyproject.toml`
+  (edges), `tests/unit_linked/{conftest,test_reserves,test_profit,test_mcev}.py`.
+- `uv run --no-sync pytest tests/unit_linked/test_reserves.py tests/unit_linked/test_profit.py tests/unit_linked/test_mcev.py -q`
+  passed 20 tests (7 + 8 + 5). One assertion was fixed: the share of months where a floor
+  bites now counts months with lives in force, not the whole 372-month grid.
+  `avk compile UNIT_LINKED`: 811 columns in 4 passes, cold compile 121 s.
+- Six-policy book at step 0 (reserving): CLASSIC DCF -132,894 with held reserve 15.67 (the
+  15-day floor). The DPF policy's DCF is positive (+1,737), from the guarantee cost and
+  expenses with only the DPF FMC as income. In every case the reserving total reserve
+  exceeds the mc BEL.
+- Decisions:
+  - `conftest.parity_check` (fixture `assert_parity`) writes per-policy-month grids with
+    `Policy_Number` and `Projection_Step` and compares them through
+    `avk.testing.parity.compare`, so each policy is measured on its own scale, using the
+    CLAUDE.md classes. The tests folder is not a package, so it is a fixture.
+  - `gf_reserve_dcf` is not masked at step 0, as the plan states; the held reserve, the
+    floor and the revival provision are reported at the valuation instant.
+  - `sum_at_risk` = `A_end x sar` + `rpu_sar x R_survival`. The paid-up cohort's aggregate
+    sum at risk is scaled to the survivors of the opening cohort. New paid-up entrants'
+    cover starts in the next month's `rpu_sar`. At step 0 this is the valuation sum at risk.
+  - Unit segment profit is computed on every basis from the basis's own unit flows:
+    allocated premium, additions (`addition_outgo`), active and paid-up slot growth and
+    the DPF credited return, less admin, mortality and guarantee charges, FMC on all states,
+    discontinuance charges, unit-funded exits and withdrawals, less the increase in that
+    basis's unit reserve. `total_profit` reads the be unit segment.
+  - Capital is computed on every basis, including reserving (not reported there). Part 1
+    = factor x (basis unit reserve + reserving non-unit reserve per policy x basis lives).
+    Interest on capital is at the basis's general fund rate. `cost_of_capital` in the BE
+    chain reads the be capital columns explicitly.
+  - MCEV: `mc_reserves` and `mc_increase_in_reserves` are the mc analogues of
+    `be_reserves` and `increase_in_reserves`. The plan names only the interest term; the
+    profit chain needs both. `pv_premium` discounts the mc basis's premiums, which equal
+    the be premiums because both bases carry no decrement margin.
+    `gf_bel` = -PV(`mc_net_cf`). This equals the mc `gf_reserve_dcf` (a test asserts it).
+    `bel_pp` divides by the unfloored mc lives, as `MarketConsistentValue.bel_pp` does, so
+    it is NaN after the last exit.
+  - `coverage_units` = be `unit_reserve` x (t > 0): fund value in force across all states.
+- Next: Task 5, the output schema.

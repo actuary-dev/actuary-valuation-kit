@@ -195,7 +195,7 @@ ignore_imports = [
     "avk.products.unit_linked.expenses -> avk.products.unit_linked.decrements",
     "avk.products.unit_linked.general_fund -> avk.products.unit_linked.gf_interest",
     "avk.products.unit_linked.reserves -> avk.products.unit_linked.gf_interest",
-    "avk.products.unit_linked.capital -> avk.products.unit_linked.profit",
+    "avk.products.unit_linked.capital -> avk.products.unit_linked.gf_interest",
     "avk.products.unit_linked.mcev -> avk.products.unit_linked.profit",
     "avk.products.unit_linked.formulas -> avk.products.unit_linked.fund_slots",
     "avk.products.*.formulas -> avk.model.lang",
