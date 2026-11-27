@@ -9,6 +9,15 @@
   regulatory-cap tables with formats `avk_ul_keyed_v1` and `avk_ul_year_key_v1`,
   validation before projection, model points in five fund slots, a skeleton
   Valuation product reporting opening funds, and an invented demo book.
+- Value UNIT_LINKED business on reserving, best-estimate and market-consistent
+  bases: units in five fund slots with active, discontinued (DPF) and reduced
+  paid-up states, charges, additions and guarantees. The general fund carries
+  commission, expenses and interest. The general fund reserve has its zero and
+  mortality-charge floors and a revival provision. The best-estimate profit
+  signature has unit and non-unit segments. Solvency capital and MCEV (PVFP,
+  frictional cost, CRNHR, VIF, BEL) complete the valuation. Add the final
+  UNIT_LINKED output schema and saved 10,000-policy valuation results.
+- `python -m avk.testing.demo --products` captures saved results for chosen products.
 - Let a product factory name companion policy tables that the run reads once,
   validates and gives to the model-point adapter; existing products declare none.
 - Allow a 1e-10 percentage-point floor in parity checks for percentage-change rate columns.

@@ -101,7 +101,7 @@ def test_pure_python_run_equals_the_jit_run(tmp_path):
             run(run_file)
         else:
             run_subprocess(run_file, env)
-        runs[label] = folder / "valuation"
+        runs[label] = folder
     for name in (
         "UNIT_LINKED_Base_aggregate_output.csv",
         "UNIT_LINKED_Base_seriatim_output.csv",
