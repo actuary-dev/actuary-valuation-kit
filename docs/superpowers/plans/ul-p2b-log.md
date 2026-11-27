@@ -156,3 +156,64 @@ task's tests were written before its module. Each test file ran against the comp
   byte-identical CSVs, and a 20-policy `NUMBA_DISABLE_JIT=1` run equal to the JIT run
   for the aggregate, seriatim and per-policy-month files.
 - Next: Task 7.
+
+## Task 7 — Saved results, demo capture and docs
+
+- Files `src/avk/testing/demo.py`, `tests/regression/test_demo_suite.py`,
+  `tests/saved/demo/10000/UNIT_LINKED/valuation/UNIT_LINKED_Base_aggregate_output.parquet`,
+  `tests/saved/demo/MANIFEST.json` (215 added lines, nothing else changed),
+  `docs/products/unit-linked.md`, `CHANGELOG.md`.
+- Saved results come only from
+  `python -m avk.testing.demo tests/saved/demo <scratch> --counts 10000 --products UNIT_LINKED`
+  (1 min 38 s). `git diff feature/unit-linked --stat -- tests/saved` shows the new
+  Parquet file and the manifest lines only; the other 170 saved files keep their hashes.
+- Saved table: 372 rows, 210 columns. Step 0 totals: unit reserve 20,762,320,181.00;
+  general-fund DCF -1,585,767,258.67; held general-fund reserve 24,157,493.51; revival
+  provision 14,023,809.96; non-unit reserve 38,181,303.47; total reserve
+  20,800,501,484.47; BEL 19,479,304,721.23 (`gf_bel` -1,283,015,459.77); PVFP
+  1,074,284,240.65; FCC 12,466,599.32; CRNHR 51,445,507.41; VIF 1,010,372,133.92; BE sum
+  at risk 9,297,153,997.78; 10,000 lives. The unit segment profit stays within 3.5e-7 of
+  zero in every month.
+- `test_public_10k_unit_linked` compares a fresh run with the saved table through
+  `avk.testing.parity`.
+- Decisions:
+  - `avk.testing.demo` gains `--products` (default: the five original products) and
+    `PRODUCT_MODES`. UNIT_LINKED captures the valuation mode only.
+  - `write_manifest` writes LF line ends on every platform. On Windows the manifest had
+    been written with CRLF, which would have changed every byte of it.
+  - UNIT_LINKED is not in the 100k slow suite: a 100k valuation takes 379 s wall
+    (projection 329 s), over the 5-minute budget for one slow test.
+- Timing (this laptop): cold compile 111 to 167 s (815 columns, 4 passes); cached load
+  about 8 s; 10k valuation 68 s wall (projection 38 s).
+
+## Final checks
+
+All run from the worktree root with `UV_LINK_MODE=copy`.
+
+| Check | Result |
+| --- | --- |
+| `uv run ruff check .` | pass |
+| `uv run ruff format --check .` | pass (240 files) |
+| `uv run mypy` | pass (142 files) |
+| `uv run lint-imports` | 14 contracts kept |
+| `uv run pytest` | 495 passed, 1 xfailed (check 9, strict), 11 deselected, 32 min |
+| `uv run pytest -m slow` | 9 passed, 33 min |
+| `scripts/generate_reference.py --check` | current |
+| `scripts/generate_ul_fund_slots.py --check` | current |
+| `scripts/check_clean_install.py` | pass |
+| `uv build` | sdist and wheel built |
+
+## Open points
+
+- P3: `residual_additions` is a 0.0 column; replace it with `@override` when the
+  remaining additions arrive. Check 11 (reduction in yield) and `riy_additions_on`.
+- P4b: the mc profit chain, capital, PVFP and VIF hold the reserving non-unit reserve,
+  whose funds follow each path's real-world returns, so they vary by path. Risk-neutral
+  runs that should grow funds on the path need `mc_fund_return_source` = 1. Scenario
+  summaries over paths are still to be designed.
+- P5: the `coverage_units` port reports the BE unit reserve (zero at step 0) for the
+  VFA work; `bel_pp` is empty after the last exit, and VFA aggregation must treat it
+  as such.
+- Maintainer: check 9 needs a decision on the reserving `fund_return_margin` (29 of
+  1,000 demo policies breach at -0.5%). The capital factors in the demo are
+  unverified, and `sar_capital_factor_no_guarantee` is 0 in the demo basis.
