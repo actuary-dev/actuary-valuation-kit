@@ -16,8 +16,9 @@ event (start, checkpoint, review, merge, stop). Design:
 3. Never merge a phase branch without the review steps in the prompts file.
 
 Reference material (outside the repository): `C:\avkwt\_ref\`.
-Codex CLI: `C:\Program Files\WindowsApps\OpenAI.Codex_26.1120.5083.0_x64__2p2nqsd0c76g0\app\resources\codex.exe`,
-model `gpt-6.2-sol`.
+Codex CLI: `<install folder>\app\resources\codex.exe`, model `gpt-6.2-sol`. The app
+updates itself into a new versioned folder and WindowsApps cannot be listed, so
+`run_codex.sh` finds the folder with `(Get-AppxPackage -Name OpenAI.Codex).InstallLocation`.
 
 Environment facts learned:
 
