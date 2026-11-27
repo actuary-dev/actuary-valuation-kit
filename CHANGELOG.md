@@ -9,6 +9,12 @@
   regulatory-cap tables with formats `avk_ul_keyed_v1` and `avk_ul_year_key_v1`,
   validation before projection, model points in five fund slots, a skeleton
   Valuation product reporting opening funds, and an invented demo book.
+- Add UNIT_LINKED compliance tools: `avk ul compliance` tests every variant against the
+  reduction-in-yield caps at 4% and 8% gross, `avk ul additions` reports the residual
+  additions that restore a breached cap per policy and policy year, and
+  `avk ul illustration` writes a benefit illustration by policy year. The Python entry
+  points are `avk.api.ul_compliance`, `ul_residual_additions` and `ul_illustration`.
+  Residual additions are not yet a cashflow of the projection.
 - Let a product factory name companion policy tables that the run reads once,
   validates and gives to the model-point adapter; existing products declare none.
 - Allow a 1e-10 percentage-point floor in parity checks for percentage-change rate columns.

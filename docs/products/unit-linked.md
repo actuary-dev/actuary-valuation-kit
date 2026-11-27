@@ -14,6 +14,12 @@ shares of benefits. The Discontinued Policy Fund and reduced paid-up state each
 pool expected balances and lives into a single cohort per policy. General-fund
 expenses, reserves, profit, capital and MCEV are phase P2b.
 
+Phase P3 adds the [compliance layer](unit-linked-compliance.md): the reduction in yield
+against `ul_riy_caps`, the residual additions that would restore a breached cap, a
+pricing-time demonstration for every variant at 4% and 8%, and the benefit illustration
+(`avk ul compliance`, `avk ul additions`, `avk ul illustration`). Residual additions are
+not yet a cashflow of the projection.
+
 Run the invented demo:
 
 ```powershell
@@ -152,7 +158,7 @@ Format `avk_ul_keyed_v1` (key = Product Variant). Every field is required:
 | mortality_charge_multiplier | >= 0 | Applied to `mortality_charges_ul` |
 | disc_ap_threshold | >= 0 | Annualised premium above which the high discontinuance scale applies |
 | auto_rebalance | 0, 1 | Rebalance to the premium allocation each anniversary |
-| riy_additions_on | 0, 1 | Reduction-in-yield residual additions (phase P3) |
+| riy_additions_on | 0, 1 | Reduction-in-yield residual additions: allowed from policy year 6 ([compliance](unit-linked-compliance.md)) |
 
 ## Charge scales and regulatory caps
 
