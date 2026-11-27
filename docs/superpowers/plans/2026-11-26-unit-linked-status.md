@@ -52,7 +52,7 @@ Environment facts learned:
 | P2a unit engine | merged | ul/p2a-unit-engine | `C:\avkwt\p2a` (full clone) | Codex gpt-6.2-sol, effort high, prompts `C:\avkwt\prompts\p2a.md`, then `p2a-fix.md` | 7e9e045 (merge 881f4f0) | log `docs/superpowers/plans/ul-p2a-log.md` |
 | P2b general fund and results | running | app worktree branch (step 0 re-bases it on feature/unit-linked ≥ 4d4e86f) | app worktree | Claude session `local_32b69ad7-2b4c-43cc-b350-eb0c78dfe618`, Opus 5.5 medium | — | plan `2026-11-26-ul-p2b-results.md`; log `ul-p2b-log.md` |
 | P3 compliance (RIY, illustration) | merged; general-fund wiring of residual additions waits for P2b | claude/ul-p3-compliance-c1cbcb | app worktree | Claude session `local_9a05dfb5-71ef-4db0-9ce3-440ffd29d952`, Sonnet 5.5 high | cafa52a (merge 1c3e888) | plan `2026-11-27-ul-p3-compliance.md`; log `ul-p3-log.md` |
-| P4b stochastic results, part 1 | running | ul/p4b-stochastic | `C:\avkwt\p4b` (full clone) | Codex gpt-6.2-sol, effort high, prompt `C:\avkwt\prompts\p4b.md` | — | summaries, TVOG helper, dynamic lapse (own table, off by default), tutorial; TVOG wiring to P2b columns later |
+| P4b stochastic results, part 1 | reviewed; merge after P2b and P6a | ul/p4b-stochastic | `C:\avkwt\p4b` (full clone) | Codex gpt-6.2-sol, effort high, prompt `C:\avkwt\prompts\p4b.md` | dd12ceb (clone and main checkout) | summaries, `avk.api.tvog`, dynamic lapse as an optional run-file setting (off when absent), tutorial; TVOG wiring to P2b columns later |
 | P5 IFRS 17 VFA and stress capital | plan merged (3f0f164); build blocked by P2b | ul/p5-ifrs17 | — | plan by session `local_79cec2d5-2396-4b34-9c21-8ea34d4a8aca` | — | plan `2026-11-27-ul-p5-ifrs17-stress.md` (10 tasks) |
 | P6a top-ups, fund strategies, highest NAV | reviewed; merge after P2b | ul/p6a-unit-features | `C:\avkwt\p6a` (full clone) | Codex gpt-6.2-sol, effort high, prompt `C:\avkwt\prompts\p6a.md` | 9fcd327 (clone and main checkout) | all features off by default; demo byte-identical (SHA-256 in its log) |
 | P6b premium funding, settlement, pension | plan merged (3f0f164); build after P2b, P5 and P6a | — | — | — | — | plan `2026-11-27-ul-p6b-features.md` (9 tasks); GST and reinsurance excluded (design call 10) |
@@ -127,3 +127,8 @@ merged, blocked.
   1. Switch charges enter `charge_income` but are in neither P2b's `charges_start` /
      `charges_end` split nor its `unit_charges_deducted`.
   2. P3's `illustration.py` excludes top-ups and strategies; document or extend it.
+- 2026-11-28 P4b part 1 reviewed and committed in its clone (dd12ceb). Codex report: 460
+  default tests and 7 slow, all checks pass, 171 saved files byte-identical, and the 10k UL
+  outputs byte-identical with dynamic lapse off. No copied spec text. Integration item 3:
+  wire `MCEV_pvfp_MC`, `MCEV_bel_MC`, `MCEV_vif_MC` and the path-discounted guarantee costs
+  into the TVOG comparison.
