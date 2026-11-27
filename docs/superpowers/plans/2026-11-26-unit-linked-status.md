@@ -54,7 +54,7 @@ Environment facts learned:
 | P3 compliance (RIY, illustration) | merged; general-fund wiring of residual additions waits for P2b | claude/ul-p3-compliance-c1cbcb | app worktree | Claude session `local_9a05dfb5-71ef-4db0-9ce3-440ffd29d952`, Sonnet 5.5 high | cafa52a (merge 1c3e888) | plan `2026-11-27-ul-p3-compliance.md`; log `ul-p3-log.md` |
 | P4b stochastic results, part 1 | running | ul/p4b-stochastic | `C:\avkwt\p4b` (full clone) | Codex gpt-6.2-sol, effort high, prompt `C:\avkwt\prompts\p4b.md` | — | summaries, TVOG helper, dynamic lapse (own table, off by default), tutorial; TVOG wiring to P2b columns later |
 | P5 IFRS 17 VFA and stress capital | plan merged (3f0f164); build blocked by P2b | ul/p5-ifrs17 | — | plan by session `local_79cec2d5-2396-4b34-9c21-8ea34d4a8aca` | — | plan `2026-11-27-ul-p5-ifrs17-stress.md` (10 tasks) |
-| P6a top-ups, fund strategies, highest NAV | running | ul/p6a-unit-features | `C:\avkwt\p6a` (full clone) | Codex gpt-6.2-sol, effort high, prompt `C:\avkwt\prompts\p6a.md` | — | all features off by default; demo valuation must stay byte-identical |
+| P6a top-ups, fund strategies, highest NAV | reviewed; merge after P2b | ul/p6a-unit-features | `C:\avkwt\p6a` (full clone) | Codex gpt-6.2-sol, effort high, prompt `C:\avkwt\prompts\p6a.md` | 9fcd327 (clone and main checkout) | all features off by default; demo byte-identical (SHA-256 in its log) |
 | P6b premium funding, settlement, pension | plan merged (3f0f164); build after P2b, P5 and P6a | — | — | — | — | plan `2026-11-27-ul-p6b-features.md` (9 tasks); GST and reinsurance excluded (design call 10) |
 
 Status values: not started, running, stopped (usage limit or error), in review,
@@ -118,3 +118,12 @@ merged, blocked.
   reconciliation test, so later unit-engine features (P6a, P6b) must update it or state
   that it excludes them. Open: residual additions are reported but not yet in the general
   fund and the units; this follows the P2b merge.
+- 2026-11-28 P6a reviewed and committed in its clone (9fcd327). Codex report: 446 default
+  tests and 7 slow, 30 new tests with and without JIT, all checks pass, and the 10k demo is
+  byte-identical. No copied spec text. Concerns: the cold compile rose from 75 s to 350 s
+  (measured while other test suites ran; re-time after merge), and the warm projection went
+  from 2.4 s to 4.1 s. Existing UL assumption packs need the new explicit off columns.
+  Integration items after P2b merges:
+  1. Switch charges enter `charge_income` but are in neither P2b's `charges_start` /
+     `charges_end` split nor its `unit_charges_deducted`.
+  2. P3's `illustration.py` excludes top-ups and strategies; document or extend it.
