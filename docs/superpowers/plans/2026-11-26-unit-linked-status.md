@@ -49,11 +49,12 @@ Environment facts learned:
 | P1 inputs and contracts | merged | claude/ul-p1-inputs-d90104 | `.claude\worktrees\ul-p1-inputs-d90104` (inside the main checkout) | Claude session `local_155c82e5-61a0-469c-8bf6-94630c380042` (ul-p1-inputs), Opus 5.5 medium | f6e11af (merge 181a503) | orchestrator fix ed0b855 (spool file handle) |
 | P4a scenario tooling | merged | ul/p4a-scenarios | `C:\avkwt\p4a` (full clone) | Codex gpt-6.2-sol | b5fb061 (merge 49b4238) | orchestrator re-ran checks: 220 passed, 14 contracts |
 | P2a unit engine | merged | ul/p2a-unit-engine | `C:\avkwt\p2a` (full clone) | Codex gpt-6.2-sol, effort high, prompts `C:\avkwt\prompts\p2a.md`, then `p2a-fix.md` | 7e9e045 (merge 881f4f0) | log `docs/superpowers/plans/ul-p2a-log.md` |
-| P2b general fund and results | ready: waiting for the maintainer to start the card | app worktree branch (cut from feature/unit-linked ≥ 4d4e86f) | app worktree | Claude session ul-p2b-results, Opus 5.5 medium (card task_0be661ae) | — | plan `2026-11-26-ul-p2b-results.md` |
-| P3 compliance (RIY, illustration) | blocked by P2b | ul/p3-compliance | C:\avkwt\p3 | Claude session, Sonnet 5.5 high | — | |
-| P4b stochastic results | blocked by P2b, P4a | ul/p4b-stochastic | C:\avkwt\p4b | Codex gpt-6.2-sol | — | |
-| P5 IFRS 17 VFA and stress capital | blocked by P2b | ul/p5-ifrs17 | C:\avkwt\p5 | Claude session, Opus 5.5 medium | — | |
-| P6 feature extensions | blocked by P2b | split later | — | — | — | |
+| P2b general fund and results | running | app worktree branch (step 0 re-bases it on feature/unit-linked ≥ 4d4e86f) | app worktree | Claude session `local_32b69ad7-2b4c-43cc-b350-eb0c78dfe618`, Opus 5.5 medium | — | plan `2026-11-26-ul-p2b-results.md`; log `ul-p2b-log.md` |
+| P3 compliance (RIY, illustration) | running (except the general-fund wiring of residual additions, after P2b merges) | app worktree branch ul-p3-compliance | app worktree | Claude session `local_9a05dfb5-71ef-4db0-9ce3-440ffd29d952`, Sonnet 5.5 high | — | writes its own plan `2026-11-27-ul-p3-compliance.md`; log `ul-p3-log.md` |
+| P4b stochastic results, part 1 | running | ul/p4b-stochastic | `C:\avkwt\p4b` (full clone) | Codex gpt-6.2-sol, effort high, prompt `C:\avkwt\prompts\p4b.md` | — | summaries, TVOG helper, dynamic lapse (own table, off by default), tutorial; TVOG wiring to P2b columns later |
+| P5 IFRS 17 VFA and stress capital | plan being written; build blocked by P2b | ul/p5-ifrs17 | — | plan session `local_79cec2d5-2396-4b34-9c21-8ea34d4a8aca`, Opus 5.5 medium | — | plan `2026-11-27-ul-p5-ifrs17-stress.md` |
+| P6a top-ups, fund strategies, highest NAV | running | ul/p6a-unit-features | `C:\avkwt\p6a` (full clone) | Codex gpt-6.2-sol, effort high, prompt `C:\avkwt\prompts\p6a.md` | — | all features off by default; demo valuation must stay byte-identical |
+| P6b premium funding, settlement, pension | plan being written (same plan session as P5) | — | — | — | — | plan `2026-11-27-ul-p6b-features.md`; GST and reinsurance excluded (design call 10) |
 
 Status values: not started, running, stopped (usage limit or error), in review,
 merged, blocked.
@@ -94,3 +95,9 @@ merged, blocked.
 - 2026-11-27 P2b proposed as a session card (task_0be661ae). The app starts nested sessions
   only on a turn the maintainer began; on a turn started by a background-task event it
   allows only a card the maintainer clicks.
+- 2026-11-27 Maintainer: start as many workers as possible. P2b started. Started in
+  parallel: P3 (Claude, Sonnet 5.5 high), the P5 and P6b plan session (Claude, Opus 5.5
+  medium), P4b part 1 and P6a (Codex, clones made by `C:\avkwt\setup_clone.sh`). Parallel
+  workers are told to avoid P2b's files (general-fund modules, `testing/demo.py`,
+  `tests/saved`, the valuation schema) and not to change existing results. Expect merge
+  conflicts in `pyproject.toml`, docs and CHANGELOG. Merge order: P2b, then P6a, P4b, P3.
