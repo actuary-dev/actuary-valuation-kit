@@ -9,7 +9,7 @@ arrays.
 """
 
 import math
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -185,12 +185,19 @@ def _retention(after: float, requested: float) -> tuple[float, float]:
 
 
 def project(
-    case: Case, gross: Gross, *, risk_charges: bool = True, residual: bool = False
+    case: Case,
+    gross: Gross,
+    *,
+    risk_charges: bool = True,
+    residual: bool = False,
+    credited: Sequence[float] | Array | None = None,
 ) -> Projection:
     """Roll one life through the policy term. With `risk_charges` False the mortality charge
     (EMR and flat extra included) and the guarantee charge are not deducted, the basis of the
     RIY test. With `residual` True a non-negative addition is credited at each permitted
-    anniversary so that RIY stays within the cap (only when the variant has the feature)."""
+    anniversary so that RIY stays within the cap (only when the variant has the feature).
+    `credited` instead credits given amounts at the end of month 12n (index `n - 1`), for
+    example the additions solved on the RIY basis, in a run that keeps every charge."""
     f = case.features
     sched = case.schedule
     months = case.months
@@ -277,7 +284,9 @@ def project(
         funds = new_funds
         total = sum(funds)
         added = 0.0
-        if (
+        if credited is not None and anniversary:
+            added = float(credited[year - 1])
+        elif (
             residual
             and f["riy_additions_on"]
             and anniversary
@@ -287,12 +296,12 @@ def project(
             target = gross.annual - sched.year("riy_cap", year)
             wanted = accumulate(premium_times, premium_amounts, target, year)
             added = max(wanted - total, 0.0)
-            if added > 0:
-                funds = [
-                    value + added * (value / total if total > 0 else w)
-                    for value, w in zip(funds, norm, strict=True)
-                ]
-                total = sum(funds)
+        if added > 0:
+            funds = [
+                value + added * (value / total if total > 0 else w)
+                for value, w in zip(funds, norm, strict=True)
+            ]
+            total = sum(funds)
         year_sum = 0.0 if anniversary else year_sum + total
         cum_mc += mc
         cum_pac += pac
@@ -365,6 +374,8 @@ class Riy:
     cap: Array
     excess: Array
     residual: Array
+    fund: Array
+    premiums_to_date: Array
 
 
 def riy(projection: Projection) -> Riy:
@@ -386,7 +397,8 @@ def riy(projection: Projection) -> Riy:
     cap = np.array([case.schedule.year("riy_cap", int(y)) for y in years])
     value = projection.gross.annual - yields
     residual = projection.year_end(projection.residual)[first - 1 :]
-    return Riy(years, yields, value, cap, value - cap, residual)
+    paid = projection.year_end(projection.premiums_to_date)[first - 1 :]
+    return Riy(years, yields, value, cap, value - cap, residual, fund[first - 1 :], paid)
 
 
 @dataclass(frozen=True)

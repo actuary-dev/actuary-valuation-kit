@@ -6,6 +6,7 @@ from the prepared book or from the variant, fund and charge tables, and calls th
 projection in `avk.products.unit_linked.illustration`.
 """
 
+import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -26,6 +27,9 @@ from avk.products.unit_linked.illustration import (
     ChargeSchedule,
     Gross,
     assess,
+    project,
+    riy,
+    year_end,
 )
 from avk.runs.check import CheckReport, check
 from avk.runs.config import RunConfig, load_run_config
@@ -348,3 +352,217 @@ def _roll_up(summary: pl.DataFrame, rates: Sequence[float]) -> pl.DataFrame:
             row[f"Status_{_label(rate)}"] = max(found, key=SEVERITY.__getitem__)
         rows.append(row)
     return pl.DataFrame(rows)
+
+
+def _eligible_case(row: Mapping[str, Any], tables: Mapping[str, Table]) -> Case:
+    """The case of a premium-paying policy as sold."""
+    if int(row["Policy_Status"]) != 0:
+        raise InputError(
+            f"{row['Policy_Number']}: the compliance layer illustrates premium-paying policies "
+            f"(Policy Status 0); this policy has Policy Status {int(row['Policy_Status'])}"
+        )
+    return case_from_row(row, tables)
+
+
+def _file_stem(policy: str) -> str:
+    return re.sub(r"[^A-Za-z0-9_.-]", "_", policy)
+
+
+ILLUSTRATION_COLUMNS = (
+    "Policy_Number",
+    "Product_Variant",
+    "Gross_Return",
+    "Policy_Year",
+    "Premiums_Paid",
+    "Premium_Allocation_Charge",
+    "Administration_Charge",
+    "Mortality_Charge",
+    "Guarantee_Charge",
+    "Fund_Management_Charge",
+    "Loyalty_Addition",
+    "Booster_Addition",
+    "Guaranteed_Addition",
+    "Residual_Addition",
+    "Fund_Value",
+    "Death_Benefit",
+    "Discontinuance_Charge",
+    "Surrender_Value",
+    "Surrender_Payable_Month",
+    "Maturity_Value",
+    "Net_Yield",
+    "RIY",
+    "RIY_Cap",
+    "RIY_Before_Additions",
+)
+_ILLUSTRATION_SCHEMA: dict[str, Any] = {
+    **dict.fromkeys(ILLUSTRATION_COLUMNS[4:], pl.Float64),
+    "Policy_Year": pl.Int64,
+    "Surrender_Payable_Month": pl.Int64,
+}
+
+
+@dataclass(frozen=True)
+class Illustration:
+    """The benefit illustration of one policy: a row per gross return and policy year."""
+
+    table: pl.DataFrame
+    files: tuple[Path, ...] = ()
+
+
+def _none(value: float) -> float | None:
+    return None if np.isnan(value) else float(value)
+
+
+def _month(value: float) -> int | None:
+    return None if np.isnan(value) else int(value)
+
+
+def ul_illustration(
+    config: str | Path | RunConfig,
+    policy: str,
+    *,
+    root: str | Path | None = None,
+    rates: Sequence[float] = RATES,
+    output: str | Path | None = None,
+) -> Illustration:
+    """The benefit illustration of one premium-paying policy as sold, at each gross return.
+
+    Every charge is deducted and the residual additions solved on the RIY basis are credited;
+    net yield and RIY are measured on the RIY basis (without the mortality and guarantee
+    charges) from policy year 5 on."""
+    grosses = _gross_returns(rates)
+    report = _load(config, root)
+    assert report.points is not None
+    found = report.points.frame.filter(pl.col("Policy_Number") == policy)
+    if found.height == 0:
+        raise InputError(f"unknown policy {policy!r}")
+    row = found.row(0, named=True)
+    case = _eligible_case(row, report.tables)
+    rows: list[dict[str, Any]] = []
+    for gross in grosses:
+        solved = project(case, gross, risk_charges=False, residual=True)
+        measured = riy(solved)
+        before = riy(project(case, gross, risk_charges=False))
+        illustrated = project(
+            case, gross, risk_charges=True, credited=solved.year_end(solved.residual)
+        )
+        ye = year_end(illustrated)
+        first = int(measured.years[0]) if len(measured.years) else case.term_years + 1
+        for i in range(case.term_years):
+            j = i + 1 - first
+            measure = j >= 0
+            rows.append(
+                {
+                    "Policy_Number": policy,
+                    "Product_Variant": row["Product Variant"],
+                    "Gross_Return": gross.annual,
+                    "Policy_Year": i + 1,
+                    "Premiums_Paid": float(ye.premiums[i]),
+                    "Premium_Allocation_Charge": float(ye.pac[i]),
+                    "Administration_Charge": float(ye.admin[i]),
+                    "Mortality_Charge": float(ye.mortality[i]),
+                    "Guarantee_Charge": float(ye.guarantee[i]),
+                    "Fund_Management_Charge": float(ye.fmc[i]),
+                    "Loyalty_Addition": float(ye.loyalty[i]),
+                    "Booster_Addition": float(ye.booster[i]),
+                    "Guaranteed_Addition": float(ye.guaranteed_addition[i]),
+                    "Residual_Addition": float(ye.residual[i]),
+                    "Fund_Value": float(ye.fund[i]),
+                    "Death_Benefit": float(ye.death_benefit[i]),
+                    "Discontinuance_Charge": float(ye.discontinuance_charge[i]),
+                    "Surrender_Value": _none(ye.surrender_value[i]),
+                    "Surrender_Payable_Month": _month(ye.surrender_payable_month[i]),
+                    "Maturity_Value": _none(ye.maturity_value[i]),
+                    "Net_Yield": float(measured.net_yield[j]) if measure else None,
+                    "RIY": float(measured.riy[j]) if measure else None,
+                    "RIY_Cap": float(measured.cap[j]) if measure else None,
+                    "RIY_Before_Additions": float(before.riy[j]) if measure else None,
+                }
+            )
+    table = pl.DataFrame(rows, schema_overrides=_ILLUSTRATION_SCHEMA).select(ILLUSTRATION_COLUMNS)
+    files: tuple[Path, ...] = ()
+    if output is not None:
+        name = f"ul_illustration_{_file_stem(policy)}"
+        files = (CsvSink(Path(output)).write_table(name, table),)
+    return Illustration(table, files)
+
+
+@dataclass(frozen=True)
+class AdditionsReport:
+    """Residual additions per policy and policy year (as-sold projection, RIY basis)."""
+
+    table: pl.DataFrame
+    skipped: tuple[str, ...]
+    files: tuple[Path, ...] = ()
+
+
+def ul_residual_additions(
+    config: str | Path | RunConfig,
+    *,
+    root: str | Path | None = None,
+    rates: Sequence[float] = RATES,
+    policy: str | None = None,
+    output: str | Path | None = None,
+) -> AdditionsReport:
+    """The addition that brings RIY back to its cap, per premium-paying policy and policy
+    year from the sixth anniversary, at each gross return. Policies that are not premium-paying
+    (discontinued or reduced paid-up) are listed in `skipped`. Identical contracts are
+    projected once."""
+    grosses = _gross_returns(rates)
+    report = _load(config, root)
+    assert report.points is not None
+    frame = report.points.frame
+    if policy is not None:
+        if policy not in set(frame["Policy_Number"]):
+            raise InputError(f"unknown policy {policy!r}")
+        frame = frame.filter(pl.col("Policy_Number") == policy)
+    cache: dict[tuple[Any, ...], dict[float, Assessment]] = {}
+    rows: list[dict[str, Any]] = []
+    skipped: list[str] = []
+    for row in frame.iter_rows(named=True):
+        try:
+            case = _eligible_case(row, report.tables)
+        except InputError:
+            if policy is not None:
+                raise
+            skipped.append(str(row["Policy_Number"]))
+            continue
+        key = (
+            row["Variant_Id"],
+            row["Regime_Id"],
+            case.term_years,
+            case.payment_years,
+            case.frequency,
+            case.instalment,
+            case.instalments_payable,
+            case.allocations,
+            case.fmcs,
+            tuple(sorted(case.features.items())),
+        )
+        if key not in cache:
+            cache[key] = {g.annual: assess(case, g) for g in grosses}
+        for gross in grosses:
+            result = cache[key][gross.annual]
+            design, added = result.design, result.with_additions
+            for i, year in enumerate(design.years):
+                rows.append(
+                    {
+                        "Policy_Number": str(row["Policy_Number"]),
+                        "Product_Variant": row["Product Variant"],
+                        "Gross_Return": gross.annual,
+                        "Policy_Year": int(year),
+                        "Premiums_Paid": float(design.premiums_to_date[i]),
+                        "Fund_Value": float(design.fund[i]),
+                        "Net_Yield": float(design.net_yield[i]),
+                        "RIY": float(design.riy[i]),
+                        "RIY_Cap": float(design.cap[i]),
+                        "Residual_Addition": float(added.residual[i]),
+                        "RIY_With_Additions": float(added.riy[i]),
+                        "Status": result.status,
+                    }
+                )
+    table = pl.DataFrame(rows, schema_overrides={"Policy_Year": pl.Int64})
+    files: tuple[Path, ...] = ()
+    if output is not None:
+        files = (CsvSink(Path(output)).write_table("ul_residual_additions", table),)
+    return AdditionsReport(table, tuple(skipped), files)

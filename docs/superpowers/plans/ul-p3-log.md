@@ -96,3 +96,23 @@ Plan: `2026-11-27-ul-p3-compliance.md`.
   `ULIP_SINGLE` passes with additions; `UL_INVESTMENT_BOND` (UNCAPPED) passes. Not changed here:
   the demo calibration belongs to P1/P2b (`src/avk/testing/demo.py` is off limits to this phase).
 - Next: residual additions per policy and year, then Task 4 (benefit illustration).
+
+### Task 4 - Benefit illustration and residual additions per policy (done)
+
+- Files `src/avk/runs/ul_compliance.py` (`ul_illustration`, `ul_residual_additions`,
+  `Illustration`, `AdditionsReport`, `ILLUSTRATION_COLUMNS`), `src/avk/products/unit_linked/illustration.py`
+  (`project(..., credited=...)`, `Riy.fund` and `Riy.premiums_to_date`), `src/avk/api.py`,
+  `src/avk/cli.py` (`avk ul illustration`, `avk ul additions`),
+  `tests/unit_linked/test_illustration_output.py` (6), `tests/unit_linked/test_residual_additions.py` (9).
+- `uv run pytest tests/unit_linked/test_illustration_output.py tests/unit_linked/test_residual_additions.py -q`: 15 passed.
+- Decisions: the illustration keeps every charge and credits the residual additions solved on
+  the RIY basis (so the amounts are known before the illustrated fund is rolled); net yield and
+  RIY are the RIY-basis figures with the additions credited, `RIY_Before_Additions` the design
+  figure. Surrender value inside the lock-in is the fund less the discontinuance charge and
+  payable at the lock-in end when the DPF is on; none in the maturity year. Policies whose status
+  is 1 or 2 are rejected by the illustration and skipped (and listed) by the additions report.
+  The additions report projects each distinct contract once and measures the policy **as sold**
+  (from inception), not from its in-force fund value at the valuation date.
+- Output format: CSV only. The repository has no xlsx writer and no xlsx dependency; adding one is
+  outside this phase.
+- Next: Task 5, documentation, CHANGELOG, full checks.

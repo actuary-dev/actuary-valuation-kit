@@ -130,3 +130,14 @@ def test_regular_premium_addition_hits_the_cap_by_an_independent_root():
         else:
             assert measured >= 0.06 - 0.015 - 1e-10  # the fund is already above the cap
     assert path.year_end(path.residual)[5] > 0
+
+
+def test_credited_amounts_join_the_fund_at_the_anniversary_and_then_grow():
+    case = capped(0.04, term_years=8)
+    gross = Gross.of(GROSS)
+    bare = project(case, gross, risk_charges=False)
+    credited = project(case, gross, risk_charges=False, credited=[0, 0, 0, 0, 0, 1_000.0, 0, 0])
+    assert credited.fund[:71] == pytest.approx(bare.fund[:71], rel=1e-14)
+    assert credited.fund[71] == pytest.approx(bare.fund[71] + 1_000.0, rel=1e-12)
+    assert credited.fund[95] == pytest.approx(bare.fund[95] + 1_000.0 * YEAR_FACTOR**2, rel=1e-12)
+    assert credited.year_end(credited.residual)[5] == 1_000.0

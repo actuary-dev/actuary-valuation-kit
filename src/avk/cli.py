@@ -6,7 +6,15 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Any
 
-from avk.api import check, compile, run, ul_compliance, version
+from avk.api import (
+    check,
+    compile,
+    run,
+    ul_compliance,
+    ul_illustration,
+    ul_residual_additions,
+    version,
+)
 from avk.demo.generate import add_generate_arguments, generate
 from avk.runs.scenarios import generate_scenarios, scenario_library
 from avk.runtime.errors import AvkError
@@ -44,9 +52,73 @@ def _add_ul_arguments(commands: Any) -> None:
     compliance.add_argument(
         "--strict", action="store_true", help="exit 1 if any case fails at any gross return"
     )
+    illustration = actions.add_parser(
+        "illustration", help="Benefit illustration of one policy by policy year"
+    )
+    illustration.add_argument("config")
+    illustration.add_argument("--policy", required=True, help="Policy Number")
+    illustration.add_argument("--root")
+    illustration.add_argument("--rates", type=_numbers(float), default=[0.04, 0.08])
+    illustration.add_argument("--output", help="folder for the CSV file")
+    additions = actions.add_parser(
+        "additions", help="Residual additions per policy and policy year"
+    )
+    additions.add_argument("config")
+    additions.add_argument("--policy", default=None, help="one Policy Number (default: all)")
+    additions.add_argument("--root")
+    additions.add_argument("--rates", type=_numbers(float), default=[0.04, 0.08])
+    additions.add_argument("--output", help="folder for the CSV file")
+
+
+def _ul_illustration(args: argparse.Namespace) -> int:
+    result = ul_illustration(
+        args.config, args.policy, root=args.root, rates=args.rates, output=args.output
+    )
+    table = result.table
+    print(f"Benefit illustration for {args.policy} ({table['Product_Variant'][0]})")
+    for rate in table["Gross_Return"].unique(maintain_order=True):
+        print(f"  gross return {rate:.2%}: year, fund value, death benefit, surrender value, RIY")
+        rows = table.filter(table["Gross_Return"] == rate)
+        last = rows["Policy_Year"].max()
+        for row in rows.iter_rows(named=True):
+            if row["Policy_Year"] % 5 and row["Policy_Year"] != last:
+                continue
+            surrender = row["Surrender_Value"]
+            riy_value = row["RIY"]
+            print(
+                f"    {row['Policy_Year']:>3}  {row['Fund_Value']:>14,.2f}"
+                f"  {row['Death_Benefit']:>14,.2f}"
+                f"  {'maturity' if surrender is None else format(surrender, ',.2f'):>14}"
+                f"  {'' if riy_value is None else format(riy_value, '.4%'):>8}"
+            )
+    for path in result.files:
+        print(f"  {path}")
+    return 0
+
+
+def _ul_additions(args: argparse.Namespace) -> int:
+    result = ul_residual_additions(
+        args.config, root=args.root, rates=args.rates, policy=args.policy, output=args.output
+    )
+    table = result.table
+    needed = table.filter(table["Residual_Addition"] > 0)
+    policies = table["Policy_Number"].n_unique()
+    print(
+        f"{policies} policies tested; {needed['Policy_Number'].n_unique()} need a residual "
+        f"addition in {needed.height} policy-year results"
+    )
+    if result.skipped:
+        print(f"  {len(result.skipped)} policies are not premium-paying and were skipped")
+    for path in result.files:
+        print(f"  {path}")
+    return 0
 
 
 def _ul_command(args: argparse.Namespace) -> int:
+    if args.action == "illustration":
+        return _ul_illustration(args)
+    if args.action == "additions":
+        return _ul_additions(args)
     report = ul_compliance(
         args.config,
         root=args.root,

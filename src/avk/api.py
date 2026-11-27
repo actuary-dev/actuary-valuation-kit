@@ -15,8 +15,12 @@ from avk.runs.config import RunConfig as RunConfig
 from avk.runs.config import load_run_config as load_run_config
 from avk.runs.context import RunResult as RunResult
 from avk.runs.registry import run as run_config
+from avk.runs.ul_compliance import AdditionsReport as AdditionsReport
 from avk.runs.ul_compliance import ComplianceReport as ComplianceReport
+from avk.runs.ul_compliance import Illustration as Illustration
 from avk.runs.ul_compliance import ul_compliance as ul_compliance
+from avk.runs.ul_compliance import ul_illustration as ul_illustration
+from avk.runs.ul_compliance import ul_residual_additions as ul_residual_additions
 from avk.runtime.errors import AvkError as AvkError
 from avk.runtime.errors import ConfigError as ConfigError
 from avk.runtime.errors import FormulaError as FormulaError
