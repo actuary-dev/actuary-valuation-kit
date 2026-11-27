@@ -42,7 +42,7 @@ Environment facts learned:
 | Phase | Status | Branch | Worktree | Worker / id | Last checkpoint | Notes |
 |---|---|---|---|---|---|---|
 | P0 design and tracking | merged | feature/unit-linked | main checkout | orchestrator | 021370e | design approved 2026-11-26 |
-| P1 inputs and contracts | running | claude/ul-p1-inputs-d90104 | `.claude\worktrees\ul-p1-inputs-d90104` (inside the main checkout) | Claude session `local_155c82e5-61a0-469c-8bf6-94630c380042` (ul-p1-inputs), Opus 5.5 medium | — | commits locally itself |
+| P1 inputs and contracts | in review (worker done: 302 tests + slow suite pass, last commit f6e11af) | claude/ul-p1-inputs-d90104 | `.claude\worktrees\ul-p1-inputs-d90104` (inside the main checkout) | Claude session `local_155c82e5-61a0-469c-8bf6-94630c380042` (ul-p1-inputs), Opus 5.5 medium | — | commits locally itself |
 | P4a scenario tooling | merged | ul/p4a-scenarios | `C:\avkwt\p4a` (full clone) | Codex gpt-6.2-sol | b5fb061 (merge 49b4238) | orchestrator re-ran checks: 220 passed, 14 contracts |
 | P2a unit engine | blocked by P1 | ul/p2a-unit-engine | C:\avkwt\p2a | Codex gpt-6.2-sol | — | |
 | P2b general fund and results | blocked by P2a | ul/p2b-results | C:\avkwt\p2b | Claude session, Opus 5.5 medium | — | |
