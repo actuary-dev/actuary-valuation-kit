@@ -58,9 +58,15 @@ class UnitLinkedDecrements(Component):
         """Projected months in the policy term, including the maturity month."""
         return t > 0 and self.policy_month(t) >= 1 and self.policy_month(t) <= self.term_months(t)
 
+    def matured_at_valuation(self, t):
+        """The valuation instant is in the final month of the policy term."""
+        return self.policy.Duration_in_Months == self.term_months(t)
+
     def maturity(self, t):
-        """Indicator for the final projected month of coverage."""
-        return self.live(t) and self.policy_month(t) == self.term_months(t)
+        """Settle at term end, or at step 1 if the term ended at valuation."""
+        return (self.live(t) and self.policy_month(t) == self.term_months(t)) or (
+            t == 1 and self.matured_at_valuation(t)
+        )
 
     def year_start(self, t):
         """First month of a new policy year after issue."""
@@ -75,8 +81,10 @@ class UnitLinkedDecrements(Component):
         return self.policy_month(t) <= self.policy.V_lock_in_months
 
     def lockin_due(self, t):
-        """Release the DPF at lock-in end or in the first projection month if overdue."""
-        return t > 0 and self.policy_month(t) >= self.policy.V_lock_in_months
+        """Release at the earlier of lock-in end and term end, or at step 1 if overdue."""
+        return t > 0 and self.policy_month(t) >= min(
+            self.policy.V_lock_in_months, self.term_months(t)
+        )
 
     def in_premium_term(self, t):
         """Whether the current policy month falls within the recurring payment term."""

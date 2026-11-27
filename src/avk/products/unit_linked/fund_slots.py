@@ -15,6 +15,7 @@ class FundSlots(Component):
         "additions_pp",
         "allocated_pp",
         "live",
+        "maturity",
         "rpu_retention",
         "to_rpu",
         "year_start",
@@ -52,7 +53,7 @@ class FundSlots(Component):
     def fund_1_open(self, t):
         """Opening active value of slot 1, with rebalancing when due."""
         return if_(
-            t == 0 or (self.live(t) and self.A_begin(t) > 0),
+            t == 0 or ((self.live(t) or self.maturity(t)) and self.A_begin(t) > 0),
             if_(
                 self.rebalance(t),
                 prev(self.fund_close_total, 0) * self.fund_1_allocation(t),
@@ -166,7 +167,7 @@ class FundSlots(Component):
     def fund_2_open(self, t):
         """Opening active value of slot 2, with rebalancing when due."""
         return if_(
-            t == 0 or (self.live(t) and self.A_begin(t) > 0),
+            t == 0 or ((self.live(t) or self.maturity(t)) and self.A_begin(t) > 0),
             if_(
                 self.rebalance(t),
                 prev(self.fund_close_total, 0) * self.fund_2_allocation(t),
@@ -280,7 +281,7 @@ class FundSlots(Component):
     def fund_3_open(self, t):
         """Opening active value of slot 3, with rebalancing when due."""
         return if_(
-            t == 0 or (self.live(t) and self.A_begin(t) > 0),
+            t == 0 or ((self.live(t) or self.maturity(t)) and self.A_begin(t) > 0),
             if_(
                 self.rebalance(t),
                 prev(self.fund_close_total, 0) * self.fund_3_allocation(t),
@@ -394,7 +395,7 @@ class FundSlots(Component):
     def fund_4_open(self, t):
         """Opening active value of slot 4, with rebalancing when due."""
         return if_(
-            t == 0 or (self.live(t) and self.A_begin(t) > 0),
+            t == 0 or ((self.live(t) or self.maturity(t)) and self.A_begin(t) > 0),
             if_(
                 self.rebalance(t),
                 prev(self.fund_close_total, 0) * self.fund_4_allocation(t),
@@ -508,7 +509,7 @@ class FundSlots(Component):
     def fund_5_open(self, t):
         """Opening active value of slot 5, with rebalancing when due."""
         return if_(
-            t == 0 or (self.live(t) and self.A_begin(t) > 0),
+            t == 0 or ((self.live(t) or self.maturity(t)) and self.A_begin(t) > 0),
             if_(
                 self.rebalance(t),
                 prev(self.fund_close_total, 0) * self.fund_5_allocation(t),

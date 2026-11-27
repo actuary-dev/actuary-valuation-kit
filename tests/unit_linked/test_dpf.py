@@ -5,6 +5,7 @@ import pytest
 from test_unit_fund import monthly_charge, monthly_return
 
 from avk.products.unit_linked.bindings import SCENARIO_ASSETS
+from avk.products.unit_linked.formulas import UnitLinked
 
 
 @pytest.mark.parametrize(
@@ -77,6 +78,19 @@ def test_overdue_dpf_at_valuation_is_paid_in_first_projection_month(ul_projectio
     assert be("dpf_lockin_paid")[1] > 0
     assert be("lockin_exits_D")[1] == pytest.approx(1 - be("deaths_D")[1])
     assert be("D_end")[1] == be("dpf_close")[1] == 0
+
+
+def test_dpf_is_released_in_final_term_month_when_lock_in_outlasts_term(ul_projection):
+    model, _ = ul_projection(3, Duration_in_Months=58, Policy_Term=5, V_lock_in_months=72)
+    for basis in UnitLinked.BASES:
+        data = model[basis]
+        assert not data("dpf_lockin_paid")[:2].any()
+        surviving_fund = data("dpf_after")[2] - data("dpf_death_paid")[2]
+        assert surviving_fund > 0
+        assert data("dpf_lockin_paid")[2] == surviving_fund, basis
+        assert data("lockin_exits_D")[2] == data("D_begin")[2] - data("deaths_D")[2]
+        np.testing.assert_array_equal(data("dpf_close")[2:], 0)
+        np.testing.assert_array_equal(data("D_end")[2:], 0)
 
 
 def test_dpf_disabled_still_charges_for_paid_discontinuance_within_lock_in(ul_projection):

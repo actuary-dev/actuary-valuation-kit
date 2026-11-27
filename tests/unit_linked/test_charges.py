@@ -4,6 +4,9 @@ import numpy as np
 import pytest
 from test_unit_fund import monthly_charge
 
+from avk.products.unit_linked.bindings import MAX_FUND_SLOTS
+from avk.products.unit_linked.formulas import UnitLinked
+
 
 @pytest.mark.parametrize("opening", [1e-14, 25.0])
 def test_exhausted_fund_scales_every_deduction(ul_projection, opening):
@@ -95,3 +98,27 @@ def test_addition_uses_allocation_if_charges_exhaust_fund(ul_projection):
     be = model["be"]
     assert be("fund_after_charges_total")[1] == 0
     assert be("fund_1_additions")[1] == be("guaranteed_addition_pp")[1] > 0
+
+
+def test_anniversary_addition_has_no_credit_or_cost_without_a_destination(ul_projection):
+    model, _ = ul_projection(
+        0,
+        Duration_in_Months=119,
+        Premium_Payment_Term=5,
+        Instalments_Paid=5,
+        Instalments_Payable=5,
+        Fund_1_Allocation=0.0,
+        Fund_1_Value=1.0,
+        Sum_Assured=1e9,
+        V_guaranteed_addition_rate=0.01,
+    )
+    for basis in UnitLinked.BASES:
+        data = model[basis]
+        assert data("anniversary")[1] == data("A_begin")[1] == data("full_premiums")[1] == 1
+        assert data("premium_income")[1] == data("allocation_total")[1] == 0
+        assert data("fund_after_premium_total")[1] == 1
+        assert data("fund_after_charges_total")[1] == 0
+        assert data("additions_pp")[1] == data("addition_outgo")[1] == 0
+        for i in range(1, MAX_FUND_SLOTS + 1):
+            assert data(f"fund_{i}_additions")[1] == 0
+        assert data("non_unit_benefit_outgo")[1] == pytest.approx(data("death_non_unit_A")[1])

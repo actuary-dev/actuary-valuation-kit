@@ -80,7 +80,7 @@ class UnitLinkedLives(Component):
         return self.D_begin(t) * self.q(t)
 
     def lockin_exits_D(self, t):
-        """Release both survivors and new entrants if the lock-in has ended."""
+        """Release both survivors and new entrants when the DPF is due."""
         return (self.D_begin(t) - self.deaths_D(t) + self.to_dpf(t)) * self.lockin_due(t)
 
     def D_end(self, t):

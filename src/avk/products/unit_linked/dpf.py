@@ -48,7 +48,7 @@ class DiscontinuedFund(Component):
                 self.disc_cap(t),
             )
             * self.lock_in(t)
-            * (t > 0)
+            * self.live(t)
         )
 
     def disc_charge_income(self, t):
@@ -111,7 +111,7 @@ class DiscontinuedFund(Component):
         return self.to_dpf(t) * (self.fund_close_total(t) - self.disc_charge_pp(t))
 
     def dpf_lockin_paid(self, t):
-        """Release surviving balances and new transfers when lock-in ends."""
+        """Release surviving balances and new transfers when due."""
         return (self.dpf_after(t) - self.dpf_death_paid(t) + self.dpf_inflow(t)) * self.lockin_due(
             t
         )

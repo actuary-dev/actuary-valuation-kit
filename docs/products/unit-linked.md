@@ -26,6 +26,20 @@ UNIT_LINKED supports the Valuation run type only; StressCapital and IFRS17 are
 rejected with `UNIT_LINKED supports the Valuation run type only`. It has three bases:
 `reserving`, `be` (best estimate) and `mc` (market consistent).
 
+## Timing conventions
+
+Policies mature in the final month of their term. For a policy that has already
+matured at the valuation date, step 0 holds its maturity value in the unit reserve.
+The policy settles in projection month 1 from those balances, with the applicable
+return of charges and maturity guarantee. No premiums, charges, investment returns,
+decrements, rebalancing or additions apply in that settlement month.
+
+The Discontinued Policy Fund (DPF) releases at the earlier of lock-in end and term
+end. A balance already due at valuation is paid in projection month 1. An
+anniversary addition requires either a positive fund balance after deductions or
+positive allocation weights. Without either, both the unit credit and the
+general-fund cost are zero.
+
 ## Policy table `policies_ul`
 
 One row per policy. Every column is required and no value may be missing; nothing
@@ -38,7 +52,7 @@ defaults. Dates are `YYYY-MM-DD` (or the other layouts the policy readers accept
 | Product Variant | text | A key of `ul_variants` (exact match) |
 | Valuation Date | date | Equal to the run's valuation date |
 | Policy Start Date | date | On or before the valuation date |
-| Policy Term (Years) | integer | Positive; the policy has not matured |
+| Policy Term (Years) | integer | Positive. The valuation date may fall in the final month of the term. |
 | Premium Payment Term (Years) | integer | 0 for single premium; at most the term |
 | Premium Frequency | code | 0 single, 1, 2, 4 or 12; 0 if and only if the payment term is 0 and the variant is single premium |
 | Annualised Premium | amount | The single premium for single-premium policies |

@@ -21,7 +21,7 @@ SLOT = '''
     def fund_{k}_open(self, t):
         """Opening active value of slot {k}, with rebalancing when due."""
         return if_(
-            t == 0 or (self.live(t) and self.A_begin(t) > 0),
+            t == 0 or ((self.live(t) or self.maturity(t)) and self.A_begin(t) > 0),
             if_(
                 self.rebalance(t),
                 prev(self.fund_close_total, 0) * self.fund_{k}_allocation(t),
@@ -137,7 +137,7 @@ class FundSlots(Component):
 
     REQUIRES = (
         "A_begin", "R_survival", "active_retention", "additions_pp", "allocated_pp",
-        "live", "rpu_retention", "to_rpu", "year_start",
+        "live", "maturity", "rpu_retention", "to_rpu", "year_start",
     )
     fund_return_margin = param("fund_return_margin")
     mc_fund_return_source = param("mc_fund_return_source")
