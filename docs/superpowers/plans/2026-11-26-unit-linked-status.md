@@ -44,7 +44,7 @@ Environment facts learned:
 | P0 design and tracking | merged | feature/unit-linked | main checkout | orchestrator | 021370e | design approved 2026-11-26 |
 | P1 inputs and contracts | merged | claude/ul-p1-inputs-d90104 | `.claude\worktrees\ul-p1-inputs-d90104` (inside the main checkout) | Claude session `local_155c82e5-61a0-469c-8bf6-94630c380042` (ul-p1-inputs), Opus 5.5 medium | f6e11af (merge 181a503) | orchestrator fix ed0b855 (spool file handle) |
 | P4a scenario tooling | merged | ul/p4a-scenarios | `C:\avkwt\p4a` (full clone) | Codex gpt-6.2-sol | b5fb061 (merge 49b4238) | orchestrator re-ran checks: 220 passed, 14 contracts |
-| P2a unit engine | running | ul/p2a-unit-engine | `C:\avkwt\p2a` (full clone) | Codex gpt-6.2-sol, effort high, prompt `C:\avkwt\prompts\p2a.md` | — | log `docs/superpowers/plans/ul-p2a-log.md` in the clone |
+| P2a unit engine | in review (fix pass running) | ul/p2a-unit-engine | `C:\avkwt\p2a` (full clone) | Codex gpt-6.2-sol, effort high, prompts `C:\avkwt\prompts\p2a.md`, then `p2a-fix.md` | abd6688 (first pass, clone only) | log `docs/superpowers/plans/ul-p2a-log.md` in the clone |
 | P2b general fund and results | blocked by P2a (plan d3c8ed1) | ul/p2b-results | app worktree | Claude session, Opus 5.5 medium | — | plan `2026-11-26-ul-p2b-results.md` |
 | P3 compliance (RIY, illustration) | blocked by P2b | ul/p3-compliance | C:\avkwt\p3 | Claude session, Sonnet 5.5 high | — | |
 | P4b stochastic results | blocked by P2b, P4a | ul/p4b-stochastic | C:\avkwt\p4b | Codex gpt-6.2-sol | — | |
@@ -74,3 +74,11 @@ merged, blocked.
   streamed check left the spool file open on Windows (pyarrow keeps a path-opened IPC
   file open after its block); the test now fails without the fix.
 - 2026-11-27 P2b plan written (d3c8ed1). P2a started in Codex (clone `C:\avkwt\p2a`).
+- 2026-11-27 P2a first pass done (Codex report: 411 default tests, 6 slow, 191 UL, all
+  checks pass; 10k demo projection 2.43 s). Orchestrator committed it in the clone
+  (abd6688). No copied spec text. Review decisions, sent back as `p2a-fix.md`:
+  (1) a policy whose term ends in the valuation month settles at step 1 from its step-0
+  balances, with no other activity (the first pass dropped INR 160.8m of unit reserve
+  for 34 demo policies); (2) the DPF is released at the earlier of lock-in end and term
+  end; (3) no addition when there are no allocation weights and no funds, with the
+  general-fund cost also nil.
