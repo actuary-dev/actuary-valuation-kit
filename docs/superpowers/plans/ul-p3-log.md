@@ -42,4 +42,19 @@ Plan: `2026-11-27-ul-p3-compliance.md`.
 
 ## Tasks
 
-(none done yet)
+### Task 1 - Single-life projection, net yield and RIY (done)
+
+- Files `src/avk/products/unit_linked/illustration.py` (pure numpy: `Case`, `Gross`, `project`,
+  `net_yield`, `riy`, `year_end`), `src/avk/runs/ul_compliance.py` (case and schedule builders
+  from the bound tables; the orchestration comes in Tasks 3 and 4), `tests/unit_linked/test_illustration.py`.
+- `uv run pytest tests/unit_linked/test_illustration.py -q`: 16 passed (141 s including the
+  engine kernel cache build). Hand tests: single premium against `(F/P)^(1/n) - 1`; five annual
+  instalments with an independent monthly roll and `numpy.roots` for the IRR (both to 1e-10 or
+  better); risk-charge exclusion; fund exhaustion; the library `flat` monthly rate equals ours;
+  per-life reconciliation with the engine columns on five scenarios x 4% and 8%
+  (loyalty, guaranteed additions, rebalance, escalation, guarantee charge, return of charges,
+  guarantee top-up, death benefit Types I and II) at 1e-9 relative.
+- Decision: `Case.due` and the roll mirror P2a column by column. The case builder
+  `case_from_row` reads the prepared contract, so the test feeds the engine and the projection
+  the same row. The builders moved forward from Task 3 into this task.
+- Next: Task 2, the cap test, status rule and residual additions.
