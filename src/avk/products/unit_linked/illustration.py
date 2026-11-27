@@ -469,3 +469,42 @@ def year_end(projection: Projection) -> YearEnd:
         surrender_payable_month=payable,
         maturity_value=maturity,
     )
+
+
+# A breach is an excess of RIY over the cap above this absolute amount (rate units). It is
+# far above the root-finder's precision and below any rate that matters.
+BREACH_TOLERANCE = 1e-12
+
+
+@dataclass(frozen=True)
+class Assessment:
+    """The cap test of one case at one gross return.
+
+    `design` measures the fund as designed (no additions); `with_additions` credits the
+    residual additions of the variant (none when it does not have the feature). Status:
+    `pass` (no breach), `pass_with_additions` (breaches only from the first addition year and
+    additions restore every cap), `design_fail` (a breach before the first addition year),
+    `fail` (a late breach that additions cannot or may not repair)."""
+
+    status: str
+    design: Riy
+    with_additions: Riy
+    first_breach_year: int | None
+    worst_margin: float
+
+
+def assess(case: Case, gross: Gross) -> Assessment:
+    """Test a case against its caps at a gross return, on the RIY basis (no risk charges)."""
+    design = riy(project(case, gross, risk_charges=False))
+    added = riy(project(case, gross, risk_charges=False, residual=True))
+    breach = design.excess > BREACH_TOLERANCE
+    first = int(design.years[breach][0]) if breach.any() else None
+    if first is None:
+        status = "pass"
+    elif first < FIRST_ADDITION_YEAR:
+        status = "design_fail"
+    elif case.features["riy_additions_on"] and not (added.excess > BREACH_TOLERANCE).any():
+        status = "pass_with_additions"
+    else:
+        status = "fail"
+    return Assessment(status, design, added, first, float(np.min(design.cap - design.riy)))

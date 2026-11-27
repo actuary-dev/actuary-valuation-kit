@@ -58,3 +58,19 @@ Plan: `2026-11-27-ul-p3-compliance.md`.
   `case_from_row` reads the prepared contract, so the test feeds the engine and the projection
   the same row. The builders moved forward from Task 3 into this task.
 - Next: Task 2, the cap test, status rule and residual additions.
+
+### Task 2 - Cap test and residual additions (done)
+
+- Files `src/avk/products/unit_linked/illustration.py` (`assess`, `Assessment`,
+  `BREACH_TOLERANCE`), `tests/unit_linked/test_residual_additions.py`.
+- `uv run pytest tests/unit_linked/test_residual_additions.py -q`: 8 passed. Hand cases: single
+  premium 100,000 at 8% gross with a 1% cap from year 6: the year-6 addition equals
+  `100,000 x 1.07^6 - 95,000 x (1.08 x 0.9865)^6` to 1e-12 relative, RIY after it equals the cap
+  to 1e-12, the year-7 addition is positive and smaller than the stand-alone shortfall
+  (sequential), a regular-premium case checked with `numpy.roots`.
+- Decisions: the addition is credited at the end of month 12n (units added at the year-end
+  price), so the units credited and the general-fund cost are the same amount; the status rule
+  is `pass`, `pass_with_additions`, `design_fail` (breach before year 6) and `fail`
+  (late breach with the feature off or additions that cannot restore the cap). A tolerance of
+  1e-12 (rate units) decides a breach.
+- Next: Task 3, the demonstration run, API and CLI.
