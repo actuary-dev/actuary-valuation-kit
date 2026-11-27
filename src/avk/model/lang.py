@@ -86,6 +86,26 @@ class LoanLinkedProduct(Product):
         """Outstanding insured loan cover in force."""
 
 
+class UnitLinkedProduct(Product):
+    """Unit-linked family: cashflow and reserve ports of the unit segment."""
+
+    @abstractmethod
+    def premium_income(self, t: float) -> float:
+        """Premiums received for opening active lives."""
+
+    @abstractmethod
+    def charge_income(self, t: float) -> float:
+        """Charges received from premiums and the unit funds."""
+
+    @abstractmethod
+    def non_unit_benefit_outgo(self, t: float) -> float:
+        """Benefits and additions payable by the general fund."""
+
+    @abstractmethod
+    def unit_reserve(self, t: float) -> float:
+        """Expected value of the closing funds across policy states."""
+
+
 class RiderProduct(Product):
     """Rider family: benefits, premiums, insured events and coverage units."""
 

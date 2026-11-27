@@ -489,11 +489,11 @@ def check_tables(tables: Mapping[str, Table]) -> list[str]:
             break
     if messages:
         return messages
-    return messages + _cap_messages(tables, variants, caps)
+    return messages + _cap_messages(tables, variants, caps, dpf["fmc"].item())
 
 
 def _cap_messages(
-    tables: Mapping[str, Table], variants: pl.DataFrame, caps: pl.DataFrame
+    tables: Mapping[str, Table], variants: pl.DataFrame, caps: pl.DataFrame, dpf_fmc: float
 ) -> list[str]:
     messages = []
     capped = caps.filter(pl.col("caps_apply") == 1)
@@ -501,6 +501,8 @@ def _cap_messages(
         regime = int(cap["regime_id"])
         for row in variants.filter(pl.col("regime_id") == regime).iter_rows(named=True):
             name = f"{VARIANTS_TABLE}: variant {row['key']} breaches {cap['key']}"
+            if row["dpf_enabled"] and row["lock_in_months"] > 0 and dpf_fmc > cap["dpf_fmc_max"]:
+                messages.append(f"{name}: DPF fmc above dpf_fmc_max")
             variant = int(row["variant_id"])
             pac = _year_columns(
                 year_table(tables, SCALES_TABLE, "premium_allocation_rate"), variant
