@@ -53,9 +53,9 @@ Environment facts learned:
 | P2b general fund and results | running | app worktree branch (step 0 re-bases it on feature/unit-linked ≥ 4d4e86f) | app worktree | Claude session `local_32b69ad7-2b4c-43cc-b350-eb0c78dfe618`, Opus 5.5 medium | — | plan `2026-11-26-ul-p2b-results.md`; log `ul-p2b-log.md` |
 | P3 compliance (RIY, illustration) | running (except the general-fund wiring of residual additions, after P2b merges) | app worktree branch ul-p3-compliance | app worktree | Claude session `local_9a05dfb5-71ef-4db0-9ce3-440ffd29d952`, Sonnet 5.5 high | — | writes its own plan `2026-11-27-ul-p3-compliance.md`; log `ul-p3-log.md` |
 | P4b stochastic results, part 1 | running | ul/p4b-stochastic | `C:\avkwt\p4b` (full clone) | Codex gpt-6.2-sol, effort high, prompt `C:\avkwt\prompts\p4b.md` | — | summaries, TVOG helper, dynamic lapse (own table, off by default), tutorial; TVOG wiring to P2b columns later |
-| P5 IFRS 17 VFA and stress capital | plan being written; build blocked by P2b | ul/p5-ifrs17 | — | plan session `local_79cec2d5-2396-4b34-9c21-8ea34d4a8aca`, Opus 5.5 medium | — | plan `2026-11-27-ul-p5-ifrs17-stress.md` |
+| P5 IFRS 17 VFA and stress capital | plan merged (3f0f164); build blocked by P2b | ul/p5-ifrs17 | — | plan by session `local_79cec2d5-2396-4b34-9c21-8ea34d4a8aca` | — | plan `2026-11-27-ul-p5-ifrs17-stress.md` (10 tasks) |
 | P6a top-ups, fund strategies, highest NAV | running | ul/p6a-unit-features | `C:\avkwt\p6a` (full clone) | Codex gpt-6.2-sol, effort high, prompt `C:\avkwt\prompts\p6a.md` | — | all features off by default; demo valuation must stay byte-identical |
-| P6b premium funding, settlement, pension | plan being written (same plan session as P5) | — | — | — | — | plan `2026-11-27-ul-p6b-features.md`; GST and reinsurance excluded (design call 10) |
+| P6b premium funding, settlement, pension | plan merged (3f0f164); build after P2b, P5 and P6a | — | — | — | — | plan `2026-11-27-ul-p6b-features.md` (9 tasks); GST and reinsurance excluded (design call 10) |
 
 Status values: not started, running, stopped (usage limit or error), in review,
 merged, blocked.
@@ -102,3 +102,11 @@ merged, blocked.
   workers are told to avoid P2b's files (general-fund modules, `testing/demo.py`,
   `tests/saved`, the valuation schema) and not to change existing results. Expect merge
   conflicts in `pyproject.toml`, docs and CHANGELOG. Merge order: P2b, then P6a, P4b, P3.
+- 2026-11-28 P5 and P6b plans reviewed and merged (3f0f164); no copied spec text. Each
+  plan ends with maintainer questions. The orchestrator takes these defaults unless the
+  maintainer says otherwise:
+  - P5: new UL capital, measurement and roll-forward saved modes, flagged for awareness;
+    certainty-equivalent VFA now, with a TVOG adjustment possible after P4b; Legal Entity
+    not in the group key; the factor-based CRNHR kept; no partial-withdrawal lapse shock;
+    the teaching calibration accepted.
+  - P6b: decided when P6b starts.
