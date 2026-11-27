@@ -1,10 +1,12 @@
 """Unit-linked insurance: composition and model-point contract."""
 
-from avk.model.lang import Component, UnitLinkedProduct, curve, param, scen, table
+from avk.model.lang import Component, UnitLinkedProduct, curve, param, table
 from avk.products.unit_linked.benefits import UnitSegment
-from avk.products.unit_linked.decrements import UnitLinkedDecrements, channel_table, year_table
+from avk.products.unit_linked.decrements import UnitLinkedDecrements, year_table
 from avk.products.unit_linked.dpf import DiscontinuedFund
+from avk.products.unit_linked.expenses import UnitLinkedExpenses
 from avk.products.unit_linked.fund_slots import SLOTS, FundSlots
+from avk.products.unit_linked.general_fund import GeneralFundCashflows
 from avk.products.unit_linked.lives import UnitLinkedLives
 from avk.products.unit_linked.paid_up import PaidUpCashflows
 from avk.products.unit_linked.premiums import ActiveCashflows
@@ -143,6 +145,8 @@ class UnitLinked(
     DiscontinuedFund,
     PaidUpCashflows,
     UnitSegment,
+    UnitLinkedExpenses,
+    GeneralFundCashflows,
     UnitLinkedProduct,
 ):
     CODE, LABEL, BASES = "UNIT_LINKED", "Unit-linked insurance", ("reserving", "be", "mc")
@@ -157,21 +161,10 @@ class UnitLinked(
     cap_disc_pct_high = year_table("ul_disc_charge_caps/disc_pct_high", "Regime_Id")
     cap_disc_cap_high = year_table("ul_disc_charge_caps/disc_cap_high", "Regime_Id")
     riy_max = year_table("ul_riy_caps", "Regime_Id")
-    commission = channel_table("commissions_ul")
     interest_curve = curve("interest_rates")
     asset_returns = curve("ul_asset_returns")
-    roi = scen("roi")
-    vroi = scen("vroi")
-    inflation = param("Inflation")
     tax_rate = param("Tax Rate")
     profit_transfer_rate = param("profit_transfer_rate")
-    prudent_margin_expense = param("prudent_margin_expense")
-    initial_fixed_expense = param("initial_fixed_expense")
-    initial_percent_premium_expense = param("initial_percent_premium_expense")
-    initial_percent_sa_expense = param("initial_percent_sa_expense")
-    renewal_fixed_expense = param("renewal_fixed_expense")
-    claim_expense = param("claim_expense")
-    fund_expense_rate = param("fund_expense_rate")
     reserve_floor_days = param("reserve_floor_days")
     revival_strain_dpf = param("revival_strain_dpf")
     revival_strain_rpu = param("revival_strain_rpu")

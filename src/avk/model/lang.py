@@ -102,6 +102,14 @@ class UnitLinkedProduct(Product):
         """Benefits and additions payable by the general fund."""
 
     @abstractmethod
+    def acquisition_cost(self, t: float) -> float:
+        """Commission and initial expenses."""
+
+    @abstractmethod
+    def expense_outgo(self, t: float) -> float:
+        """Maintenance expenses."""
+
+    @abstractmethod
     def unit_reserve(self, t: float) -> float:
         """Expected value of the closing funds across policy states."""
 
