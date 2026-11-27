@@ -133,7 +133,13 @@ def test_streamed_batches_share_the_companion(run):
     assert all(frame is SEEN[0] for frame in SEEN)
 
 
-def test_streamed_orphan_reported_once_after_all_batches(run):
+def test_streamed_orphan_reported_once_after_all_batches(run, tmp_path, monkeypatch):
+    import shutil
+    import tempfile
+
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+    monkeypatch.setattr(tempfile, "tempdir", str(scratch))
     frame = pl.read_csv(run["folder"] / "extra.csv")
     orphans = pl.DataFrame({"Policy Number": ["NOPE1", "NOPE2"], "value": [98, 99]})
     streamed(run, pl.concat([frame, orphans]))
@@ -141,6 +147,12 @@ def test_streamed_orphan_reported_once_after_all_batches(run):
         check_module.check(run["config"])
     assert str(info.value) == "extra_rows: 2 row(s) without a policy"
     assert len(SEEN) == 3  # every batch prepared before the orphans are known
+    # No file handle outlives the failure (Windows cannot remove an open file),
+    # even while the traceback keeps the check's frames alive.
+    spools = list(scratch.glob("avk-policies-*"))
+    assert spools
+    for spool in spools:
+        shutil.rmtree(spool)
 
 
 def test_existing_factories_declare_no_companions():

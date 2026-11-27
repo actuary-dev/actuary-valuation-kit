@@ -233,7 +233,9 @@ def _prepare(
             with closing(sqlite3.connect(index)) as connection:
                 connection.execute("PRAGMA cache_size=-2048")
                 connection.execute("CREATE TABLE ids (value PRIMARY KEY) WITHOUT ROWID")
-                with ipc.open_file(spool) as reader:
+                # Close the spool explicitly: Arrow's reader keeps a path-opened file
+                # open after its block, and Windows cannot remove an open file.
+                with pa.OSFile(str(spool), "rb") as source, ipc.open_file(source) as reader:
                     column = reader.schema.get_field_index("Policy_Number")
                     for i in range(reader.num_record_batches):
                         identifiers = reader.get_batch(i).column(column).to_pylist()
