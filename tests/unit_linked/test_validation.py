@@ -446,3 +446,12 @@ def test_fmc_cap_of_held_funds(book, ul_tables):
         check_policies_against_tables(policies, holdings, tables),
         "fmc of a fund held under a capped regime above its cap",
     )
+
+
+def test_dpf_fmc_cap_applies_before_any_projected_transfer(ul_tables):
+    tables = changed(ul_tables, "ul_funds", "DPF", "fmc", 0.006)
+    messages = check_tables(tables)
+    assert any(
+        "variant ULIP_CLASSIC breaches IRDAI_2024: DPF fmc above dpf_fmc_max" in m for m in messages
+    )
+    assert all("UL_INVESTMENT_BOND" not in m for m in messages)

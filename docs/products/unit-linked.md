@@ -8,12 +8,11 @@ benefit type, the lock-in and Discontinued Policy Fund (DPF), reduced paid-up,
 partial withdrawals, loyalty and booster additions, return of charges, a maturity
 guarantee and regulatory caps.
 
-**Status.** This release (phase P1) delivers the input contract: the tables below,
-their validation, the preparation of model points into fund slots and a skeleton
-projection that reports the opening funds. The projection of units, charges,
-decrements, benefits, reserves and profit follows in later phases (P2a, P2b). Some
-inputs are not yet read by any formula; they are still required and validated, so a
-book that passes `avk check` now keeps passing when the projection arrives.
+**Status.** Phase P2a adds the unit projection on all three bases. Valuation reports
+lives by state, premiums, unit funds and charges, and the unit and general-fund
+shares of benefits. The Discontinued Policy Fund and reduced paid-up state each
+pool expected balances and lives into a single cohort per policy. General-fund
+expenses, reserves, profit, capital and MCEV are phase P2b.
 
 Run the invented demo:
 
@@ -27,6 +26,20 @@ UNIT_LINKED supports the Valuation run type only; StressCapital and IFRS17 are
 rejected with `UNIT_LINKED supports the Valuation run type only`. It has three bases:
 `reserving`, `be` (best estimate) and `mc` (market consistent).
 
+## Timing conventions
+
+Policies mature in the final month of their term. For a policy that has already
+matured at the valuation date, step 0 holds its maturity value in the unit reserve.
+The policy settles in projection month 1 from those balances, with the applicable
+return of charges and maturity guarantee. No premiums, charges, investment returns,
+decrements, rebalancing or additions apply in that settlement month.
+
+The Discontinued Policy Fund (DPF) releases at the earlier of lock-in end and term
+end. A balance already due at valuation is paid in projection month 1. An
+anniversary addition requires either a positive fund balance after deductions or
+positive allocation weights. Without either, both the unit credit and the
+general-fund cost are zero.
+
 ## Policy table `policies_ul`
 
 One row per policy. Every column is required and no value may be missing; nothing
@@ -39,7 +52,7 @@ defaults. Dates are `YYYY-MM-DD` (or the other layouts the policy readers accept
 | Product Variant | text | A key of `ul_variants` (exact match) |
 | Valuation Date | date | Equal to the run's valuation date |
 | Policy Start Date | date | On or before the valuation date |
-| Policy Term (Years) | integer | Positive; the policy has not matured |
+| Policy Term (Years) | integer | Positive. The valuation date may fall in the final month of the term. |
 | Premium Payment Term (Years) | integer | 0 for single premium; at most the term |
 | Premium Frequency | code | 0 single, 1, 2, 4 or 12; 0 if and only if the payment term is 0 and the variant is single premium |
 | Annualised Premium | amount | The single premium for single-premium policies |
@@ -164,6 +177,8 @@ admin_escalation_max; guarantee_charge above guarantee_charge_max;
 min_db_premium_multiple or lock_in_months below the regime minimum; a discontinuance
 scale above `ul_disc_charge_caps` in any year; a held fund whose FMC exceeds fmc_max
 (the DPF: dpf_fmc_max); and a sum assured below the regime's minimum cover multiple.
+For a capped variant that can transfer to the DPF, the DPF FMC is checked before
+projection even when the book starts with no DPF holdings.
 The regime `UNCAPPED` sets caps_apply 0 and explicit non-binding values, so none of
 these checks applies.
 
@@ -209,7 +224,7 @@ positions in `ul_funds` keys; empty slots hold zeros and Fund_Index -1.
 
 ## Not modelled
 
-In this release: any projection beyond the opening funds. Planned later: switching
+Planned later: switching
 behaviour, top-ups, lifecycle and systematic transfer strategies, premium funding
 benefit, highest-NAV guarantee mechanics, settlement options, pension variants, tax
 on charges and reinsurance.

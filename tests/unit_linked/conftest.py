@@ -199,3 +199,82 @@ def book():
 @pytest.fixture(scope="session")
 def ul_tables():
     return load_tables()
+
+
+@pytest.fixture(scope="session")
+def projection_inputs(tmp_path_factory):
+    from avk.demo.generate import generate
+    from avk.products.unit_linked.formulas import UnitLinked
+    from avk.runs.check import check
+    from avk.runs.compile import product_kernel
+
+    path = generate(tmp_path_factory.mktemp("ul-projection"), "UNIT_LINKED", 6, 209)
+    policies, holdings = valid_book()
+    policies.write_csv(path.parent / "policies.csv")
+    holdings.write_csv(path.parent / "policy_funds.csv")
+    return check(path), product_kernel(UnitLinked)
+
+
+@pytest.fixture
+def ul_projection(projection_inputs):
+    from avk.assumptions.lowering import lower
+    from avk.model.data import ModelPoints
+    from avk.model.executor import OutputRequest, project
+    from avk.runs.cases import case_parameters
+
+    report, kernel = projection_inputs
+    assert report.points is not None and report.scenarios is not None
+
+    def run(
+        policy=None, *, case=None, scenario_overrides=None, scenarios=None, mc_params=None, **fields
+    ):
+        from dataclasses import replace
+
+        frame = report.points.frame if policy is None else report.points.frame.slice(policy, 1)
+        frame = frame.with_columns(pl.lit(value).alias(name) for name, value in fields.items())
+        points = ModelPoints(frame, report.points.fields)
+        scenarios = report.scenarios if scenarios is None else scenarios
+        if scenario_overrides is not None:
+            scenarios = replace(scenarios, variables={**scenarios.variables, **scenario_overrides})
+        months = next(iter(scenarios.variables.values())).shape[1]
+        contexts = report.contexts
+        if mc_params is not None:
+            mc = contexts["mc"]
+            contexts = {
+                **contexts,
+                "mc": mc.model_copy(update={"params": {**mc.params, **mc_params}}),
+            }
+        inputs = lower(contexts, points, scenarios, kernel, case_parameters(case, months))
+        projection = project(kernel, inputs, OutputRequest(diagnostics=True))
+        return Diagnostics(report, projection), frame
+
+    return run
+
+
+class Diagnostics:
+    def __init__(self, report, projection):
+        self.report = report
+        self.columns = dict(
+            zip(projection.grid_columns, projection.grids.swapaxes(0, 1), strict=True)
+        )
+
+    def __getitem__(self, basis):
+        def column(name):
+            values = self.columns.get(f"{name}@{basis}")
+            if values is None:
+                values = self.columns[name]
+            if values.shape[1] == 1:
+                values = values[:, 0]
+            return values[0] if values.shape[0] == 1 else values
+
+        return column
+
+    def params(self, basis):
+        return self.report.contexts[basis].params
+
+    def scenario(self, name):
+        return self.report.scenarios.variables[name][0]
+
+    def table(self, name, row, key):
+        table = self.report.tables[name]
+        return table.values[row - table.axes[0].start, table.axes[1].keys.index(key)]

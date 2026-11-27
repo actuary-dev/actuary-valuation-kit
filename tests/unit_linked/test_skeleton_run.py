@@ -87,7 +87,13 @@ def test_run_reports_the_opening_funds(demo, tmp_path):
     pl.DataFrame({"Projection_Step": [0], **{k: [v] for k, v in expected.items()}}).write_csv(
         tmp_path / "expected.csv"
     )
-    aggregate.filter(pl.col("Projection_Step") == 0).write_csv(tmp_path / "actual.csv")
+    opening = aggregate.filter(pl.col("Projection_Step") == 0)
+    opening.select("Projection_Step", *expected).write_csv(tmp_path / "actual.csv")
+    for suffix in ("reserving", "BE", "MC"):
+        assert opening[f"funds_total_{suffix}"].item() == pytest.approx(sum(expected.values()))
+        assert opening[f"lives_total_{suffix}"].item() == 200
+        assert opening[f"charges_total_{suffix}"].item() == 0
+        assert aggregate[f"premiums_{suffix}"].sum() > 0
     classes = {"Projection_Step": "identifier", **dict.fromkeys(expected, "value")}
     compare(tmp_path / "actual.csv", tmp_path / "expected.csv", classes=classes).assert_ok()
     later = aggregate.filter(pl.col("Projection_Step") > 0)

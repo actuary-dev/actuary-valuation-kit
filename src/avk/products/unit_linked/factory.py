@@ -39,7 +39,7 @@ from avk.products.unit_linked.bindings import (
     WITHDRAWALS_TABLE,
 )
 from avk.products.unit_linked.formulas import UnitLinked
-from avk.products.unit_linked.output_columns import FUNDS
+from avk.products.unit_linked.output_columns import BASIS_SUFFIXES, OPENING_FUNDS, UNIT_SEGMENT
 from avk.products.unit_linked.preparation import UnitLinkedModelPointAdapter, require_valuation
 from avk.products.unit_linked.validation import UnitLinkedPolicyValidator
 from avk.runtime.errors import ConfigError
@@ -169,10 +169,17 @@ class UnitLinkedFactory(ProductFactory):
         )
 
     def output_schema(self, run_type: str) -> OutputSchema:
-        """The skeleton's opening funds (basis-independent), keyed like Term."""
+        """Opening holdings and the unit segment on each valuation basis."""
         require_valuation(run_type)
         return OutputSchema(
-            entries=tuple((name, column, None) for name, column in FUNDS),
+            entries=(
+                *((name, column, None) for name, column in OPENING_FUNDS),
+                *(
+                    (f"{name}_{suffix}", column, basis)
+                    for basis, suffix in BASIS_SUFFIXES
+                    for name, column in UNIT_SEGMENT
+                ),
+            ),
             keys=(
                 ("Policy_Number", POLICY, None),
                 ("Policy_Month", "policy_month", None),
@@ -180,7 +187,7 @@ class UnitLinkedFactory(ProductFactory):
                 ("Projection_Step", STEP, None),
             ),
             integer_keys=frozenset({"Policy_Month"}),
-            seriatim=tuple((name, column, None, 0) for name, column in FUNDS),
+            seriatim=tuple((name, column, None, 0) for name, column in OPENING_FUNDS),
         )
 
     def aggregate_ratios(self, schema: OutputSchema) -> dict[str, tuple[str, str, str, float]]:

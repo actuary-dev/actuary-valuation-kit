@@ -1,7 +1,62 @@
-"""Public output labels of the skeleton product and their columns (phase P2b extends them)."""
+"""Public valuation labels for opening holdings and the projected unit segment."""
 
-# Aggregate entries: (output name, column); both are basis-independent in P1.
-FUNDS = (
+OPENING_FUNDS = (
     ("funds_opening_unit_fund", "opening_unit_fund"),
     ("funds_opening_dpf_fund", "opening_dpf_fund"),
+)
+
+BASIS_SUFFIXES = (("reserving", "reserving"), ("be", "BE"), ("mc", "MC"))
+
+UNIT_SEGMENT = (
+    ("lives_active", "A_end"),
+    ("lives_dpf", "D_end"),
+    ("lives_paid_up", "R_end"),
+    ("lives_total", "lives_end"),
+    ("deaths_active", "deaths_A"),
+    ("deaths_dpf", "deaths_D"),
+    ("deaths_paid_up", "deaths_R"),
+    ("surrenders_active", "surrenders_A"),
+    ("cessations_active", "cessations_A"),
+    ("transfers_to_dpf", "to_dpf"),
+    ("transfers_to_paid_up", "to_rpu"),
+    ("exits_active_paid", "paid_out_A"),
+    ("exits_dpf_lock_in", "lockin_exits_D"),
+    ("surrenders_paid_up", "surrenders_R"),
+    ("expiries_paid_up", "expiries_R"),
+    ("maturities_active", "maturities_A"),
+    ("maturities_paid_up", "maturities_R"),
+    ("premiums", "premium_income"),
+    ("premiums_allocated", "allocated_premiums"),
+    ("charges_allocation", "pac_income"),
+    ("charges_administration", "admin_income"),
+    ("charges_mortality", "mc_income"),
+    ("charges_guarantee", "gc_income"),
+    ("charges_fmc_active", "fmc_income_A"),
+    ("charges_fmc_paid_up", "rpu_fmc_total"),
+    ("charges_fmc_dpf", "dpf_fmc"),
+    ("charges_discontinuance", "disc_charge_income"),
+    ("charges_total", "charge_income"),
+    ("funds_active", "unit_reserve_A"),
+    ("funds_dpf", "dpf_close"),
+    ("funds_paid_up", "rpu_close_total"),
+    ("funds_total", "unit_reserve"),
+    ("benefits_unit_active_death", "death_unit_A"),
+    ("benefits_unit_active_discontinuance", "surrender_unit_A"),
+    ("benefits_unit_active_maturity", "maturity_unit_A"),
+    ("benefits_unit_dpf_death", "dpf_death_paid"),
+    ("benefits_unit_dpf_release", "dpf_lockin_paid"),
+    ("benefits_unit_paid_up_death", "death_unit_R"),
+    ("benefits_unit_paid_up_surrender", "surrender_unit_R"),
+    ("benefits_unit_paid_up_expiry", "expiry_unit_R"),
+    ("benefits_unit_paid_up_maturity", "maturity_unit_R"),
+    ("benefits_unit_withdrawals", "partial_withdrawal_outgo"),
+    ("benefits_unit_total", "unit_benefit_outgo"),
+    ("benefits_non_unit_active_death", "death_non_unit_A"),
+    ("benefits_non_unit_paid_up_death", "death_non_unit_R"),
+    ("benefits_non_unit_return_of_charges", "return_of_charges"),
+    ("benefits_non_unit_active_maturity_top_up", "maturity_guarantee_A"),
+    ("benefits_non_unit_paid_up_maturity_top_up", "maturity_guarantee_R"),
+    ("benefits_non_unit_additions", "addition_outgo"),
+    ("benefits_non_unit_dpf_guarantee", "dpf_guarantee_cost"),
+    ("benefits_non_unit_total", "non_unit_benefit_outgo"),
 )
