@@ -116,3 +116,28 @@ Plan: `2026-11-27-ul-p3-compliance.md`.
 - Output format: CSV only. The repository has no xlsx writer and no xlsx dependency; adding one is
   outside this phase.
 - Next: Task 5, documentation, CHANGELOG, full checks.
+
+### Task 5 - Documentation, CHANGELOG and full checks (done)
+
+- Files `docs/products/unit-linked-compliance.md` (new), `docs/products/unit-linked.md` (P3
+  paragraph and link), `CHANGELOG.md` (one bullet).
+- Final verification, run from the worktree root:
+
+| Check | Result |
+|---|---|
+| `uv run ruff check .` | pass |
+| `uv run ruff format --check .` | pass (232 files) |
+| `uv run mypy` | pass (137 files) |
+| `uv run lint-imports` | 14 contracts kept, 0 broken |
+| `uv run pytest` (default) | 463 passed, 9 deselected, 1:17:03 |
+| `uv run python scripts/generate_reference.py --check` | current |
+| `uv run python scripts/generate_ul_fund_slots.py --check` | current |
+| `uv run python scripts/check_clean_install.py` | pass |
+| `uv build` | pass |
+| `git diff -- tests/saved` | empty (saved results untouched) |
+| `uv run pytest -m slow` | not run: no change to a formula, the projection or a kernel; the new modules are outside the formula contract |
+
+- New tests: 47 (16 illustration, 9 residual additions, 16 compliance run, 6 illustration output).
+- Open items for the maintainer: wire `residual_additions` into the general fund and units after
+  P2b merges; confirm the first addition year (6 here, constant `FIRST_ADDITION_YEAR`); demo
+  premiums at the low end design-fail the year-5 cap (calibration belongs to P1/P2b); CSV only.
