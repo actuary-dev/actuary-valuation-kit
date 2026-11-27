@@ -74,3 +74,25 @@ Plan: `2026-11-27-ul-p3-compliance.md`.
   (late breach with the feature off or additions that cannot restore the cap). A tolerance of
   1e-12 (rate units) decides a breach.
 - Next: Task 3, the demonstration run, API and CLI.
+
+### Task 3 - Compliance demonstration, API and CLI (done)
+
+- Files `src/avk/runs/ul_compliance.py` (`ul_compliance`, `case_for_variant`, `library_gross`,
+  `ComplianceReport`), `src/avk/api.py` (`ul_compliance`, `ComplianceReport`), `src/avk/cli.py`
+  (`avk ul compliance`), `tests/unit_linked/test_compliance_run.py`.
+- `uv run pytest tests/unit_linked/test_compliance_run.py -q`: 16 passed (13 s). `uv run mypy` and
+  `ruff check` clean.
+- Decisions: cases per variant are each term (default 10, 20, 30), each premium frequency (1, 12;
+  one case for single premium) and the lowest and highest annualised premium of the book (the whole
+  book's when the variant has no policy), in the selectable fund with the highest FMC, a standard
+  life aged 35, full premium payment. Options `--rates --terms --frequencies --premiums --fund`
+  override them. Gross returns go through the library `flat` operation. Exit code is 0 unless
+  `--strict` and some case fails (a failing design is a result, not a program error).
+- **Finding on the invented demo basis** (10,000-policy demo, seed 209, all terms): at the book's
+  lowest premiums (about 48,000 to 51,000 a year) every regular-premium variant breaches the
+  year-5 cap by design (RIY 4.8% to 7.1% against 4%), because the flat monthly administration
+  charge (200 to 250) is 5% or more of such a premium. They pass at the highest premiums
+  (about 516,000 to 568,000; one limited-pay case at 8% marginally fails, margin -0.09 points).
+  `ULIP_SINGLE` passes with additions; `UL_INVESTMENT_BOND` (UNCAPPED) passes. Not changed here:
+  the demo calibration belongs to P1/P2b (`src/avk/testing/demo.py` is off limits to this phase).
+- Next: residual additions per policy and year, then Task 4 (benefit illustration).
