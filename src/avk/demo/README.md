@@ -57,6 +57,42 @@ renewal_premium_expense_after_payment_term false. Credit Life sets both true:
 loans may close early despite single premium; the premium-expense switch has no
 effect for Credit Life.
 
+## Unit-linked basis (UNIT_LINKED)
+
+The unit-linked tables are invented teaching values, written by
+`avk/demo/unit_linked.py` for every product's basis folder; only UNIT_LINKED runs
+read them. Fund universe: 22 generic funds (equity, hybrid, debt, liquid,
+alternatives, two guaranteed funds and the non-selectable DPF). Equity FMCs are
+1.35% (index 0.50%, ESG 1.25%), hybrids 1.10-1.25%, debt 0.80-1.00%, liquid 0.60%,
+alternatives 1.00-1.25%, guaranteed 1.35%, DPF 0.50%. Asset mixes sit at mandate
+mid-points and sum to 1; alpha lies in [-0.5%, 1%] a year.
+
+Six variants: ULIP_CLASSIC (Type I, loyalty on the average fund from year 10,
+DPF, paid-up with a 36-month revival period, withdrawals from year 6),
+ULIP_WEALTH_T2 (Type II, loyalty from year 6, boosters, mortality charges returned,
+withdrawals reduce cover), ULIP_MATURITY_GUARANTEE (maturity guarantee of premiums
+paid, 0.4% guarantee charge), ULIP_SINGLE, ULIP_LIMITED_PAY_ROC (allocation and
+administration charges returned, annual rebalancing, 3% admin escalation) and
+UL_INVESTMENT_BOND (single premium, regime UNCAPPED, no lock-in, no DPF).
+
+ULIP_CLASSIC allocation charge is 6% in year 1, 4% in years 2-3, 3% in years 4-5,
+2% in years 6-10, nil after; admin 200 a month in years 1-5, 150 in 6-10, 100 after;
+loyalty 0.25% at year 10, 0.30% to 15, 0.40% to 20, 0.50% after. The other
+variants use invented scales within the IRDAI_2024 caps. The discontinuance scale
+of every capped variant equals the IRDAI_2024 cap scale (years 1-4, nil after).
+IRDAI_2024 holds the caps as published for the 2024 regulations; re-verify them,
+in particular the single-premium cover multiples, before any other use. UNCAPPED
+holds explicit non-binding values (1 for rates, 1e12 for amounts, 0 for minimums).
+
+Mortality charges per 1,000 are 1.75 times the demo mortality rate times 1,000,
+times 1.35 more for smokers. Discontinuance is 8% in year 1, 7% to 5% in years 2-4,
+12% in year 5, 9% to 6% in years 6-10, 4% after (channel 1 at 1.2 times). Partial
+withdrawals are nil to year 5, 0.6% of the fund a year after. Commission is 7.5% in
+year 1, 2.5% in years 2-5, 1.5% after (channel 1 at 0.8 times). Asset-class returns
+are flat: large/mid/small/global equity 11.1/12.0/12.8/9.5%, long/short government
+7.2/6.8%, corporate bonds 7.8%, money market 6.0%, gold 8.0%, real assets 9.0%.
+UNIT_LINKED product parameters are listed in `PARAMETERS` of `unit_linked.py`.
+
 ## Book construction and dates
 
 Eight independent NumPy random streams are derived from SeedSequence([seed,

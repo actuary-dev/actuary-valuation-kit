@@ -4,6 +4,8 @@ from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from importlib.metadata import entry_points
 
+import polars as pl
+
 from avk.assumptions.context import AssumptionSpec
 from avk.inputs.policies import ModelPointAdapter
 from avk.inputs.validation import PolicyValidator
@@ -20,6 +22,10 @@ class ProductFactory(ABC):
 
     code: str
     policy_table: str  # logical name of the product's model-point table
+    # Logical names of extra policy-level tables (for example fund holdings). The run reads
+    # each once, validates it with `validator().validate_companions` and builds the adapter
+    # with `companion_adapter` instead of `model_point_adapter`.
+    companion_tables: tuple[str, ...] = ()
 
     @abstractmethod
     def definition(self, extensions: tuple[str, ...] = ()) -> type[Product]: ...
@@ -27,6 +33,12 @@ class ProductFactory(ABC):
     @abstractmethod
     def model_point_adapter(self, tables: Mapping[str, Table]) -> ModelPointAdapter:
         """An adapter over this run's validated tables (from its assumption contexts)."""
+
+    def companion_adapter(
+        self, tables: Mapping[str, Table], companions: Mapping[str, pl.DataFrame]
+    ) -> ModelPointAdapter:
+        """An adapter over this run's validated tables and companion policy tables."""
+        raise ConfigError(f"{self.code}: companion tables need a companion adapter")
 
     @abstractmethod
     def assumption_spec(self) -> AssumptionSpec: ...
@@ -95,6 +107,7 @@ class ProductRegistry:
             DisabilityFactory,
         )
         from avk.products.term.factory import TermFactory
+        from avk.products.unit_linked.factory import UnitLinkedFactory
 
         registry = cls()
         registry.register(TermFactory())
@@ -102,6 +115,7 @@ class ProductRegistry:
         registry.register(CriticalIllnessFactory())
         registry.register(DisabilityFactory())
         registry.register(CreditLifeFactory())
+        registry.register(UnitLinkedFactory())
         for entry in entry_points(group="avk.products"):
             try:
                 loaded = entry.load()

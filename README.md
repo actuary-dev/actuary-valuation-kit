@@ -2,7 +2,9 @@
 Actuary Valuation Kit is a regime-neutral life-insurance valuation engine. Python products built
 from formula components compile into Numba kernels. It values Term, accidental-death,
 critical-illness, disability and credit-life books, with cases, stress capital and
-IFRS 17 GMM measurement and roll-forward. The public demo basis and books are invented.
+IFRS 17 GMM measurement and roll-forward. A [unit-linked product](docs/products/unit-linked.md)
+(UNIT_LINKED) is in development: its inputs, validation and model points are in place,
+its projection is not yet. The public demo basis and books are invented.
 
 Requires Python 3.13 or 3.14, Git and uv 0.12.19 or newer. Keep the clone,
 environment, caches, books and results outside synced folders.

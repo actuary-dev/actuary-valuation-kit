@@ -541,6 +541,24 @@ Book ratio columns (held numerator / eligible lives; sign shown):
 | `MCEV_bel_pp_BE` | `bel` | `eligible_reserve_lives` | be | -1 |
 | `MCEV_ifrs_bel_pp_BE` | `ifrs_bel` | `eligible_reserve_lives` | be | 1 |
 
+## UNIT_LINKED
+
+| Output | Source | Basis | Role / step |
+|---|---|---|---|
+| `Policy_Number` | `<policy number>` | - | key |
+| `Policy_Month` | `policy_month` | - | key |
+| `Calendar_Month` | `<calendar month>` | - | key |
+| `Projection_Step` | `<projection step>` | - | key |
+| `funds_opening_unit_fund` | `opening_unit_fund` | - | aggregate / policy-month |
+| `funds_opening_dpf_fund` | `opening_dpf_fund` | - | aggregate / policy-month |
+| `funds_opening_unit_fund` | `opening_unit_fund` | - | seriatim step 0 |
+| `funds_opening_dpf_fund` | `opening_dpf_fund` | - | seriatim step 0 |
+
+Book ratio columns (held numerator / eligible lives; sign shown):
+
+| Output | Numerator | Denominator | Basis | Sign |
+|---|---|---|---|---|
+
 ## Term cases reporting tables
 
 ### TERM_Base_aggregate_output.parquet

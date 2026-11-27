@@ -4,7 +4,13 @@
 
 - Generate correlated lognormal economic scenarios in valuation runs. Export them
   to supplied-scenario Parquet or build deterministic paths with `avk scenarios`.
-
+- Add the UNIT_LINKED input contract: policy table `policies_ul`, fund holdings
+  companion table `policy_funds_ul`, fund universe, variant, charge-scale and
+  regulatory-cap tables with formats `avk_ul_keyed_v1` and `avk_ul_year_key_v1`,
+  validation before projection, model points in five fund slots, a skeleton
+  Valuation product reporting opening funds, and an invented demo book.
+- Let a product factory name companion policy tables that the run reads once,
+  validates and gives to the model-point adapter; existing products declare none.
 - Allow a 1e-10 percentage-point floor in parity checks for percentage-change rate columns.
 - Document Windows long paths and check that repository file paths stay within 140 characters.
 

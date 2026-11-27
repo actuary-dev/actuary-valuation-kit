@@ -25,6 +25,8 @@ reader maps these public names to the binding's declared value columns.
 | Stress sets | avk_stresses_v1 | risk,target,method,additive,multiplier,start_month,end_month,maximum_decrease,factor | Disjoint windows per risk/target; all numeric controls explicit |
 | Correlations | avk_correlations_v1 | risk,other,value | Complete square, unit diagonal, symmetric, positive semidefinite, values in [-1,1] |
 | Opening IFRS 17 balances | avk_opening_v1 | product,portfolio,cohort,profitability,csm,loss_component,ri_csm,loss_recovery_component | Unique group; all amounts explicit; only ri_csm may be negative |
+| Unit-linked keyed tables | avk_ul_keyed_v1 | key,field,value | Exact string keys (no trimming or case folding); the file holds exactly the declared fields; one value per key and field |
+| Unit-linked year tables | avk_ul_year_key_v1 | year,key,field,value | Integer years from 1; nonnegative integer keys; complete year/key rectangle for each field a binding selects |
 
 Mortality fields: male, female, transgender (the third field is required by the
 engine's current three-column mortality contract). Morbidity fields:
@@ -77,3 +79,10 @@ the whole run. Several rows may share a risk and target only when their windows
 are disjoint; duplicate or overlapping intervals fail clearly. Explicit final
 month is Projection_Term*12-1, matching native End_Month: last. Rows for a target
 become the existing list-of-shocks representation; no model formula changes.
+
+Unit-linked tables. avk_ul_keyed_v1 serves ul_funds (key Fund Code),
+ul_variants (key Product Variant) and ul_regulatory_caps (key regime code). Keys
+sort as strings; a key with a trailing space is a different key. avk_ul_year_key_v1
+serves ul_charge_scales (key variant_id), ul_disc_charge_caps and ul_riy_caps (key
+regime_id); each binding reads one field, so one file holds several fields. The
+fields of every table are listed in [the unit-linked product page](../products/unit-linked.md).

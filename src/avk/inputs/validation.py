@@ -4,6 +4,7 @@ Product rules live with their product (`products/<family>/validation.py`).
 """
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import date
 from typing import Literal
@@ -62,3 +63,24 @@ class PolicyValidator(ABC):
                     )
                 )
         return issues
+
+    def validate_companions(
+        self,
+        policies: pl.DataFrame,
+        companions: Mapping[str, pl.DataFrame],
+        valuation_date: date,
+    ) -> list[Issue]:
+        """Check the companion rows of `policies` (a whole book or one streamed batch).
+
+        Rows of other policies are out of scope here; `companion_orphans` reports rows
+        whose policy is in no batch, once the whole book has been seen."""
+        return []
+
+    def companion_orphans(
+        self,
+        known: Callable[[pl.Series], pl.Series],
+        companions: Mapping[str, pl.DataFrame],
+    ) -> list[Issue]:
+        """Companion rows naming no policy of the book: `known(numbers)` is True where a
+        policy number belongs to the run's book (compared as the prepared Policy_Number)."""
+        return []
