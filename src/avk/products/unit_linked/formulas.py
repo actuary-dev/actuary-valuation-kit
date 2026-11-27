@@ -138,6 +138,10 @@ class OpeningFunds(Component):
         """The value held in the Discontinued Policy Fund at the valuation instant."""
         return self.policy.DPF_Value * (t == 0)
 
+    def annualised_premium(self, t):
+        """The policy's annualised premium (the single premium for single-premium policies)."""
+        return self.policy.Annualised_Premium
+
 
 class UnitLinked(
     PolicyTime,

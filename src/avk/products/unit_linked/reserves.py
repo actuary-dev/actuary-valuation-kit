@@ -69,6 +69,10 @@ class GeneralFundReserves(GeneralFundInterest):
         """The unit reserve plus the non-unit reserve."""
         return self.unit_reserve(t) + self.non_unit_reserve(t)
 
+    def eligible_reserve_lives(self, t):
+        """Unfloored lives eligible for the book reserve and BEL ratios."""
+        return self.lives_end(t) + self.maturities(t)
+
     def reserve_lives(self, t):
         """The lives a reserve is held for: those in force at the month's end plus those
         maturing in it, never below 1e-6 (so a reserve after the last exit is zero)."""

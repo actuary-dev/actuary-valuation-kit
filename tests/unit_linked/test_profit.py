@@ -139,9 +139,9 @@ def test_capital_is_zero_at_valuation_and_stops_after_maturity(ul_projection):
 
 
 def test_demo_guarantee_variant_switches_the_guarantee_on():
-    import polars as pl
-
     from pathlib import Path
+
+    import polars as pl
 
     basis = Path(__file__).resolve().parents[2] / "examples/demo/basis"
     variants = pl.read_csv(basis / "ul_variants.csv")

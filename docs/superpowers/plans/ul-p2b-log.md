@@ -80,3 +80,29 @@ task's tests were written before its module. Each test file ran against the comp
     it is NaN after the last exit.
   - `coverage_units` = be `unit_reserve` x (t > 0): fund value in force across all states.
 - Next: Task 5, the output schema.
+
+## Task 5 — Output schema
+
+- Files `src/avk/products/unit_linked/{output_columns,factory,reserves,formulas}.py`,
+  `docs/reference/output-columns.md` (regenerated), `tests/unit_linked/test_outputs.py`,
+  `tests/unit_linked/test_skeleton_run.py` (now reads the final names).
+- `uv run --no-sync pytest tests/unit_linked/test_outputs.py tests/unit_linked/test_skeleton_run.py -q`
+  passed 15 tests; `pytest tests/unit_linked` passed 236. Compile: 815 columns, 4 passes.
+- Decisions:
+  - Layers `reserving`, `BE` and `MC`. `decrements_*` on all three bases;
+    `cashflows_*` (premiums, charges by kind and by timing, unit funds by state and
+    `unit_reserve`, unit and general-fund benefits by kind, expenses, residual additions,
+    interest, net cashflow, the DCF, floor, held reserve, revival provision, non-unit and
+    total reserves, the per-policy reserves and `sum_at_risk`) on reserving and BE; the
+    profit chain, segment split and capital as `cashflows_*_BE`; `MCEV_*_MC` for the mc
+    profit chain, capital, frictional cost, CRNHR, PVFP, PV premium, FCC, VIF, `gf_bel`,
+    `bel` and `bel_pp`.
+  - The P2a opening-fund entries (`funds_opening_*`) are dropped from the schema: at step 0
+    `cashflows_unit_reserve_*` and the per-state fund entries report the same values. The
+    columns stay in the model.
+  - The per-policy entries aggregate as ratios (`aggregate_ratios`): held amount over the new
+    unfloored column `eligible_reserve_lives` on the entry's basis, as the shared factory
+    default does for other products. `bel_pp` uses the mc lives and is liability positive.
+  - New column `annualised_premium` (the policy field) feeds the seriatim
+    `Annualised_premium` at step 0. Every other seriatim value is at step 0 too.
+- Next: Task 6, the oracle and the verification checks.
