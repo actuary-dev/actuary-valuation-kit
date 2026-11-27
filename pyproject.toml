@@ -69,7 +69,7 @@ python_version = "3.13"
 strict = true
 
 [[tool.mypy.overrides]]
-module = ["avk.products.*.formulas", "avk.products.unit_linked.fund_slots", "avk.products.unit_linked.decrements", "avk.products.unit_linked.lives", "avk.products.unit_linked.premiums", "avk.products.unit_linked.dpf", "avk.products.unit_linked.paid_up", "avk.products.unit_linked.benefits", "avk.products.rider.critical_illness", "avk.products.rider.disability", "avk.products.common.*", "avk.generated.*"]
+module = ["avk.products.*.formulas", "avk.products.unit_linked.fund_slots", "avk.products.unit_linked.decrements", "avk.products.unit_linked.lives", "avk.products.unit_linked.premiums", "avk.products.unit_linked.dpf", "avk.products.unit_linked.paid_up", "avk.products.unit_linked.benefits", "avk.products.unit_linked.gf_interest", "avk.products.unit_linked.expenses", "avk.products.unit_linked.general_fund", "avk.products.unit_linked.reserves", "avk.products.unit_linked.profit", "avk.products.unit_linked.capital", "avk.products.unit_linked.mcev", "avk.products.rider.critical_illness", "avk.products.rider.disability", "avk.products.common.*", "avk.generated.*"]
 ignore_errors = true
 
 [tool.importlinter]
@@ -148,7 +148,7 @@ allow_indirect_imports = true
 [[tool.importlinter.contracts]]
 name = "Formulas only use the authoring API and other formulas"
 type = "forbidden"
-source_modules = ["avk.products.*.formulas", "avk.products.unit_linked.fund_slots", "avk.products.unit_linked.decrements", "avk.products.unit_linked.lives", "avk.products.unit_linked.premiums", "avk.products.unit_linked.dpf", "avk.products.unit_linked.paid_up", "avk.products.unit_linked.benefits", "avk.products.rider.critical_illness", "avk.products.rider.disability", "avk.products.common", "avk.products.common.**"]
+source_modules = ["avk.products.*.formulas", "avk.products.unit_linked.fund_slots", "avk.products.unit_linked.decrements", "avk.products.unit_linked.lives", "avk.products.unit_linked.premiums", "avk.products.unit_linked.dpf", "avk.products.unit_linked.paid_up", "avk.products.unit_linked.benefits", "avk.products.unit_linked.gf_interest", "avk.products.unit_linked.expenses", "avk.products.unit_linked.general_fund", "avk.products.unit_linked.reserves", "avk.products.unit_linked.profit", "avk.products.unit_linked.capital", "avk.products.unit_linked.mcev", "avk.products.rider.critical_illness", "avk.products.rider.disability", "avk.products.common", "avk.products.common.**"]
 forbidden_modules = [
     "avk", "avk.**",
     "polars", "pandas", "pydantic", "sqlalchemy", "streamlit", "plotly",
@@ -178,6 +178,25 @@ ignore_imports = [
     "avk.products.unit_linked.formulas -> avk.products.unit_linked.decrements",
     "avk.products.unit_linked.formulas -> avk.products.unit_linked.lives",
     "avk.products.unit_linked.fund_slots -> avk.model.lang",
+    "avk.products.unit_linked.gf_interest -> avk.model.lang",
+    "avk.products.unit_linked.formulas -> avk.products.unit_linked.gf_interest",
+    "avk.products.unit_linked.expenses -> avk.model.lang",
+    "avk.products.unit_linked.formulas -> avk.products.unit_linked.expenses",
+    "avk.products.unit_linked.general_fund -> avk.model.lang",
+    "avk.products.unit_linked.formulas -> avk.products.unit_linked.general_fund",
+    "avk.products.unit_linked.reserves -> avk.model.lang",
+    "avk.products.unit_linked.formulas -> avk.products.unit_linked.reserves",
+    "avk.products.unit_linked.profit -> avk.model.lang",
+    "avk.products.unit_linked.formulas -> avk.products.unit_linked.profit",
+    "avk.products.unit_linked.capital -> avk.model.lang",
+    "avk.products.unit_linked.formulas -> avk.products.unit_linked.capital",
+    "avk.products.unit_linked.mcev -> avk.model.lang",
+    "avk.products.unit_linked.formulas -> avk.products.unit_linked.mcev",
+    "avk.products.unit_linked.expenses -> avk.products.unit_linked.decrements",
+    "avk.products.unit_linked.general_fund -> avk.products.unit_linked.gf_interest",
+    "avk.products.unit_linked.reserves -> avk.products.unit_linked.gf_interest",
+    "avk.products.unit_linked.capital -> avk.products.unit_linked.gf_interest",
+    "avk.products.unit_linked.mcev -> avk.products.unit_linked.profit",
     "avk.products.unit_linked.formulas -> avk.products.unit_linked.fund_slots",
     "avk.products.*.formulas -> avk.model.lang",
     "avk.products.*.formulas -> avk.products.*.formulas",

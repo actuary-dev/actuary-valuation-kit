@@ -190,6 +190,19 @@ TOTALS = (
         "",
     ),
     ("fund_close_total", "self.fund_{k}_close(t)", "Total active fund at the close stage.", ""),
+    (
+        "fund_growth_total",
+        "(self.fund_{k}_after_charges(t) + self.fund_{k}_additions(t))"
+        " * self.fund_{k}_growth_rate(t)",
+        "Investment return credited to the active slots per life.",
+        "",
+    ),
+    (
+        "rpu_growth_total",
+        "self.rpu_{k}_after_charges(t) * self.fund_{k}_growth_rate(t)",
+        "Investment return credited to the opening paid-up slots.",
+        "",
+    ),
 )
 
 

@@ -13,7 +13,7 @@ import pytest
 
 from avk.api import ConfigError, InputError, check, run
 from avk.demo.generate import PRODUCTS, generate
-from avk.testing.demo import MODES, tables
+from avk.testing.demo import MODES, PRODUCT_MODES, tables
 from avk.testing.parity import compare
 
 SAVED = Path(__file__).resolve().parents[1] / "saved/demo"
@@ -58,6 +58,12 @@ def regression(folder, product, count, mode):
 def test_public_10k(demo_book, mode):
     folder, product = demo_book
     regression(folder, product, 10000, mode)
+
+
+@pytest.mark.parametrize("mode", PRODUCT_MODES["UNIT_LINKED"])
+def test_public_10k_unit_linked(tmp_path, mode):
+    generate(tmp_path, "UNIT_LINKED", 10000, 209)
+    regression(tmp_path, "UNIT_LINKED", 10000, mode)
 
 
 @pytest.mark.slow

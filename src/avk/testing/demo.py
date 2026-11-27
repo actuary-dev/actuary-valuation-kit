@@ -12,6 +12,11 @@ from avk.demo.generate import PRODUCTS, generate
 from avk.testing.parity import NON_MONETARY_VALUES
 
 MODES = ("valuation", "cases", "capital", "measurement", "rollforward")
+# Run modes captured per product; UNIT_LINKED supports the Valuation run type only.
+PRODUCT_MODES: dict[str, tuple[str, ...]] = {
+    **dict.fromkeys(PRODUCTS, MODES),
+    "UNIT_LINKED": ("valuation",),
+}
 
 
 def is_reporting_table(name: str) -> bool:
@@ -19,6 +24,11 @@ def is_reporting_table(name: str) -> bool:
         "cases_impact.csv",
         "IFRS17_rollforward.csv",
     }
+
+
+def write_manifest(path: Path, manifest: dict[str, Any]) -> None:
+    """Write with LF line ends on every platform, so the committed bytes do not change."""
+    path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", newline="\n")
 
 
 def prune(destination: Path) -> None:
@@ -34,7 +44,7 @@ def prune(destination: Path) -> None:
             manifest["files"][name]["classes"] = {
                 column: column_class(column, dtype) for column, dtype in schema.items()
             }
-    manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+    write_manifest(manifest_path, manifest)
     size = sum(p.stat().st_size for p in destination.rglob("*.*"))
     print(f"Reporting tables only: {size / 1000000:.3f} MB", flush=True)
 
@@ -66,7 +76,9 @@ def column_class(name: str, dtype: pl.DataType) -> str:
     return "value"
 
 
-def regenerate(destination: Path, scratch: Path, counts: list[int]) -> None:
+def regenerate(
+    destination: Path, scratch: Path, counts: list[int], products: list[str] | None = None
+) -> None:
     manifest_path = destination / "MANIFEST.json"
     manifest: dict[str, Any] = (
         json.loads(manifest_path.read_text())
@@ -74,10 +86,10 @@ def regenerate(destination: Path, scratch: Path, counts: list[int]) -> None:
         else {"seed": 209, "reference": "Invented demo; owner approval required", "files": {}}
     )
     for count in counts:
-        for product in PRODUCTS:
+        for product in PRODUCTS if products is None else products:
             folder = scratch / str(count) / product
             generate(folder, product, count, 209)
-            for mode in MODES:
+            for mode in PRODUCT_MODES[product]:
                 print(f"RUN {count} {product} {mode}", flush=True)
                 run(folder / f"{mode}.json")
                 for name, source in tables(folder / "output" / mode).items():
@@ -92,7 +104,7 @@ def regenerate(destination: Path, scratch: Path, counts: list[int]) -> None:
                         "classes": {c: column_class(c, t) for c, t in frame.schema.items()},
                         "rows": frame.height,
                     }
-                manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+                write_manifest(manifest_path, manifest)
     size = sum(p.stat().st_size for p in destination.rglob("*.*"))
     print(f"Saved results: {size / 1000000:.3f} MB", flush=True)
 
@@ -102,12 +114,19 @@ def main() -> None:
     parser.add_argument("destination", type=Path)
     parser.add_argument("scratch", type=Path)
     parser.add_argument("--counts", type=int, nargs="+", default=[10000, 100000])
+    parser.add_argument(
+        "--products",
+        nargs="+",
+        choices=sorted(PRODUCT_MODES),
+        default=list(PRODUCTS),
+        help="products to capture (default: the five original demo products)",
+    )
     parser.add_argument("--prune", action="store_true")
     args = parser.parse_args()
     if args.prune:
         prune(args.destination)
     else:
-        regenerate(args.destination, args.scratch, args.counts)
+        regenerate(args.destination, args.scratch, args.counts, args.products)
 
 
 if __name__ == "__main__":

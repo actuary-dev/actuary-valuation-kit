@@ -3,6 +3,7 @@
 from datetime import date
 from pathlib import Path
 
+import numpy as np
 import polars as pl
 import pytest
 
@@ -278,3 +279,155 @@ class Diagnostics:
     def table(self, name, row, key):
         table = self.report.tables[name]
         return table.values[row - table.axes[0].start, table.axes[1].keys.index(key)]
+
+
+def parity_check(folder, actual, expected, classes="value"):
+    """Compare per-policy-month grids with `avk.testing.parity` (per-policy scale)."""
+    from avk.testing.parity import compare
+
+    def frame(grids):
+        first = np.atleast_2d(next(iter(grids.values())))
+        policies, months = first.shape
+        data = {
+            "Policy_Number": np.repeat([f"P{i}" for i in range(policies)], months),
+            "Projection_Step": np.tile(np.arange(months), policies),
+        }
+        data.update({name: np.atleast_2d(values).ravel() for name, values in grids.items()})
+        return pl.DataFrame(data)
+
+    if isinstance(classes, str):
+        classes = dict.fromkeys(expected, classes)
+    classes = {"Policy_Number": "identifier", "Projection_Step": "identifier", **classes}
+    candidate, golden = folder / "candidate.parquet", folder / "golden.parquet"
+    frame(actual).write_parquet(candidate)
+    frame(expected).write_parquet(golden)
+    compare(candidate, golden, classes=classes).assert_ok()
+
+
+@pytest.fixture
+def assert_parity():
+    return parity_check
+
+
+def oracle_book() -> tuple[pl.DataFrame, pl.DataFrame]:
+    """O1 Type I, two funds, loyalty due at the next anniversary, flat extra; O2 Type II,
+    monthly, withdrawals that reduce cover; O3 in the DPF inside the lock-in; O4 reduced
+    paid-up; O5 maturity guarantee maturing next month; O6 limited pay with rebalancing
+    and return of charges."""
+    policies = [
+        policy(
+            "O1",
+            "ULIP_CLASSIC",
+            **{
+                "Policy Start Date": "2016-03-01",
+                "Date of Birth": "1981-07-15",
+                "Age at Policy Start": 34,
+                "Status Date": "2016-03-01",
+                "Premiums Paid To Date": 1000000.0,
+                "Instalments Paid": 10,
+                "Flat Extra": 1.5,
+                "Flat Extra Term (Years)": 12,
+                "Issue Cohort": 2016,
+            },
+        ),
+        policy(
+            "O2",
+            "ULIP_WEALTH_T2",
+            **{
+                "Policy Start Date": "2019-01-01",
+                "Date of Birth": "1984-05-20",
+                "Age at Policy Start": 34,
+                "Gender": "F",
+                "Smoking Status": "S",
+                "Status Date": "2019-01-01",
+                "Premium Frequency": 12,
+                "Premiums Paid To Date": 700000.0,
+                "Instalments Paid": 84,
+                "Withdrawals Current Policy Year": 5000.0,
+                "Withdrawals Previous Policy Year": 12000.0,
+                "Partial Withdrawals To Date": 17000.0,
+                "Issue Cohort": 2019,
+            },
+        ),
+        policy(
+            "O3",
+            "ULIP_CLASSIC",
+            **{
+                "Policy Start Date": "2023-06-01",
+                "Date of Birth": "1990-01-10",
+                "Age at Policy Start": 33,
+                "Policy Status": 1,
+                "Status Date": "2025-03-01",
+                "Premiums Paid To Date": 100000.0,
+                "Instalments Paid": 1,
+                "Issue Cohort": 2023,
+            },
+        ),
+        policy(
+            "O4",
+            "ULIP_CLASSIC",
+            **{
+                "Policy Start Date": "2016-01-01",
+                "Date of Birth": "1976-02-29",
+                "Age at Policy Start": 39,
+                "Policy Status": 2,
+                "Status Date": "2022-05-01",
+                "Paid Up Sum Assured": 300000.0,
+                "Instalments Paid": 6,
+                "Issue Cohort": 2016,
+            },
+        ),
+        policy(
+            "O5",
+            "ULIP_MATURITY_GUARANTEE",
+            **{
+                "Policy Start Date": "2016-02-01",
+                "Date of Birth": "1971-03-03",
+                "Age at Policy Start": 44,
+                "Status Date": "2016-02-01",
+                "Policy Term (Years)": 10,
+                "Premium Payment Term (Years)": 10,
+                "Premium Frequency": 4,
+                "Premiums Paid To Date": 1000000.0,
+                "Instalments Paid": 40,
+                "Issue Cohort": 2016,
+            },
+        ),
+        policy(
+            "O6",
+            "ULIP_LIMITED_PAY_ROC",
+            **{
+                "Premium Frequency": 4,
+                "Premium Payment Term (Years)": 10,
+                "Instalments Paid": 24,
+            },
+        ),
+    ]
+    holdings = [
+        holding("O1", "EQ_LARGE_CAP", 14000.0, 0.7, **{"Premiums Allocated To Fund": 600000.0}),
+        holding("O1", "DT_GILT", 9000.0, 0.3, **{"Premiums Allocated To Fund": 300000.0}),
+        holding("O2", "EQ_INDEX", 12000.0, 0.6),
+        holding("O2", "DT_GILT", 9000.0, 0.4),
+        holding("O3", "DPF", 5800.0, 0.0, **{"Premiums Allocated To Fund": 0.0}),
+        holding("O4", "EQ_FLEXI_CAP", 8000.0, 0.5),
+        holding("O4", "MM_LIQUID", 4000.0, 0.5),
+        holding("O5", "HY_CONSERVATIVE", 20000.0, 1.0, **{"Premiums Allocated To Fund": 900000.0}),
+        *(
+            holding("O6", fund, 1000.0 * (i + 1), share)
+            for i, (fund, share) in enumerate(
+                (
+                    ("EQ_LARGE_CAP", 0.3),
+                    ("EQ_MID_CAP", 0.2),
+                    ("HY_BALANCED", 0.2),
+                    ("DT_CORP_BOND", 0.2),
+                    ("ALT_GOLD", 0.1),
+                )
+            )
+        ),
+    ]
+    return pl.DataFrame(policies), pl.DataFrame(holdings)
+
+
+@pytest.fixture(scope="session")
+def oracle_policies():
+    return oracle_book()

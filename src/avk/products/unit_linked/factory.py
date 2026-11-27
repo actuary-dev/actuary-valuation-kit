@@ -39,7 +39,15 @@ from avk.products.unit_linked.bindings import (
     WITHDRAWALS_TABLE,
 )
 from avk.products.unit_linked.formulas import UnitLinked
-from avk.products.unit_linked.output_columns import BASIS_SUFFIXES, OPENING_FUNDS, UNIT_SEGMENT
+from avk.products.unit_linked.output_columns import (
+    BE_ONLY,
+    CASHFLOWS,
+    DECREMENTS,
+    LAYERS,
+    MCEV,
+    RATIOS,
+    SERIATIM,
+)
 from avk.products.unit_linked.preparation import UnitLinkedModelPointAdapter, require_valuation
 from avk.products.unit_linked.validation import UnitLinkedPolicyValidator
 from avk.runtime.errors import ConfigError
@@ -169,17 +177,28 @@ class UnitLinkedFactory(ProductFactory):
         )
 
     def output_schema(self, run_type: str) -> OutputSchema:
-        """Opening holdings and the unit segment on each valuation basis."""
+        """Decrements on every basis, cashflows and reserves on the reserving and
+        best-estimate bases (the latter with the profit chain, segments and capital), and
+        MCEV values on the market-consistent basis. The seriatim file holds step-0 reserves,
+        values, the sum at risk and the annualised premium."""
         require_valuation(run_type)
-        return OutputSchema(
-            entries=(
-                *((name, column, None) for name, column in OPENING_FUNDS),
-                *(
-                    (f"{name}_{suffix}", column, basis)
-                    for basis, suffix in BASIS_SUFFIXES
-                    for name, column in UNIT_SEGMENT
-                ),
+        mc = LAYERS["mc"]
+        entries = (
+            *(
+                (f"decrements_{name}_{layer}", column, basis)
+                for basis, layer in LAYERS.items()
+                for name, column in DECREMENTS
             ),
+            *(
+                (f"cashflows_{name}_{LAYERS[basis]}", column, basis)
+                for basis in ("reserving", "be")
+                for name, column in CASHFLOWS
+            ),
+            *((f"cashflows_{name}_{LAYERS['be']}", column, "be") for name, column in BE_ONLY),
+            *((f"MCEV_{name}_{mc}", column, "mc") for name, column in MCEV),
+        )
+        return OutputSchema(
+            entries=entries,
             keys=(
                 ("Policy_Number", POLICY, None),
                 ("Policy_Month", "policy_month", None),
@@ -187,11 +206,16 @@ class UnitLinkedFactory(ProductFactory):
                 ("Projection_Step", STEP, None),
             ),
             integer_keys=frozenset({"Policy_Month"}),
-            seriatim=tuple((name, column, None, 0) for name, column in OPENING_FUNDS),
+            seriatim=tuple((name, column, basis, 0) for name, column, basis in SERIATIM),
         )
 
     def aggregate_ratios(self, schema: OutputSchema) -> dict[str, tuple[str, str, str, float]]:
-        return {}
+        """Per-policy reserves and the BEL per policy: held amount over eligible lives."""
+        return {
+            output: (RATIOS[column][0], "eligible_reserve_lives", basis or "be", RATIOS[column][1])
+            for output, column, basis in schema.entries
+            if column in RATIOS
+        }
 
     def validator(self) -> UnitLinkedPolicyValidator:
         return UnitLinkedPolicyValidator(self.code)

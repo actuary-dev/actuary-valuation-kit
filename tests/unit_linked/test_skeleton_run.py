@@ -63,7 +63,7 @@ def test_demo_passes_check(demo):
     }
 
 
-def test_run_reports_the_opening_funds(demo, tmp_path):
+def test_run_reports_the_opening_unit_reserve(demo, tmp_path):
     from avk.api import run
 
     run(demo)
@@ -84,20 +84,20 @@ def test_run_reports_the_opening_funds(demo, tmp_path):
         )
     }
     assert expected["funds_opening_dpf_fund"] > 0
-    pl.DataFrame({"Projection_Step": [0], **{k: [v] for k, v in expected.items()}}).write_csv(
+    opening = aggregate.filter(pl.col("Projection_Step") == 0)
+    pl.DataFrame({"Projection_Step": [0], "unit_reserve": [sum(expected.values())]}).write_csv(
         tmp_path / "expected.csv"
     )
-    opening = aggregate.filter(pl.col("Projection_Step") == 0)
-    opening.select("Projection_Step", *expected).write_csv(tmp_path / "actual.csv")
+    for suffix in ("reserving", "BE"):
+        opening.select(
+            "Projection_Step", pl.col(f"cashflows_unit_reserve_{suffix}").alias("unit_reserve")
+        ).write_csv(tmp_path / "actual.csv")
+        classes = {"Projection_Step": "identifier", "unit_reserve": "value"}
+        compare(tmp_path / "actual.csv", tmp_path / "expected.csv", classes=classes).assert_ok()
+        assert opening[f"cashflows_charges_total_{suffix}"].item() == 0
+        assert aggregate[f"cashflows_premiums_{suffix}"].sum() > 0
     for suffix in ("reserving", "BE", "MC"):
-        assert opening[f"funds_total_{suffix}"].item() == pytest.approx(sum(expected.values()))
-        assert opening[f"lives_total_{suffix}"].item() == 200
-        assert opening[f"charges_total_{suffix}"].item() == 0
-        assert aggregate[f"premiums_{suffix}"].sum() > 0
-    classes = {"Projection_Step": "identifier", **dict.fromkeys(expected, "value")}
-    compare(tmp_path / "actual.csv", tmp_path / "expected.csv", classes=classes).assert_ok()
-    later = aggregate.filter(pl.col("Projection_Step") > 0)
-    assert (later["funds_opening_unit_fund"] == 0).all()
+        assert opening[f"decrements_lives_total_end_{suffix}"].item() == 200
 
 
 @pytest.mark.parametrize("run_type", ["StressCapital", "IFRS17"])

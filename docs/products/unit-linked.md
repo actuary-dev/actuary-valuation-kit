@@ -8,11 +8,13 @@ benefit type, the lock-in and Discontinued Policy Fund (DPF), reduced paid-up,
 partial withdrawals, loyalty and booster additions, return of charges, a maturity
 guarantee and regulatory caps.
 
-**Status.** Phase P2a adds the unit projection on all three bases. Valuation reports
-lives by state, premiums, unit funds and charges, and the unit and general-fund
-shares of benefits. The Discontinued Policy Fund and reduced paid-up state each
-pool expected balances and lives into a single cohort per policy. General-fund
-expenses, reserves, profit, capital and MCEV are phase P2b.
+**Status.** The first delivery is complete. A valuation projects the units and the
+general fund on three bases. It reports the unit reserve, the general fund reserve
+with its regulatory floors, the best-estimate profit signature split into unit and
+non-unit segments, solvency capital, and the market-consistent embedded value
+(MCEV). The Discontinued Policy Fund and the reduced paid-up state each pool expected
+balances and lives into a single cohort per policy. Reduction in yield and benefit
+illustrations (P3), stochastic summaries (P4b) and IFRS 17 (P5) come later.
 
 Phase P3 adds the [compliance layer](unit-linked-compliance.md): the reduction in yield
 against `ul_riy_caps`, the residual additions that would restore a breached cap, a
@@ -228,6 +230,178 @@ DPF holding (DPF_Value, DPF_FMC, DPF_Alpha, `DPF_W_<asset>`) and five fund slots
 `Fund_k_*` (Present, Fund_Index, Allocation, Value, FMC, Alpha, `W_<asset>`,
 Premiums_Allocated, Guaranteed_Price). Slots are filled in the order of the funds'
 positions in `ul_funds` keys; empty slots hold zeros and Fund_Index -1.
+
+## General fund cashflows
+
+The general fund (the non-unit segment) receives every charge and pays the expenses
+and the part of each benefit the units do not cover. Every item is an expected amount
+for the basis's lives. Step 0 is the valuation instant and carries none.
+
+- Income: allocation, administration, mortality and guarantee charges (start of month);
+  fund management charges on the active, paid-up and DPF funds and discontinuance
+  charges (end of month).
+- Commission: the `commissions_ul` rate by policy year and channel times the premiums.
+- Initial expense: `initial_fixed_expense` plus `initial_percent_premium_expense` of the
+  premium plus `initial_percent_sa_expense` of the sum assured, in policy month 1 only.
+- Renewal expense: `renewal_fixed_expense` a year, spread monthly from policy year 2 over
+  every policy in force (active, paid-up and in the DPF), inflated from the valuation
+  date at `Inflation`.
+- Fund expense: `fund_expense_rate` a year on the unit reserve at the start of the month.
+- Claim expense: `claim_expense` per death in any state, inflated like renewal expenses.
+- Benefits above the units: the death benefit over the closing fund, maturity guarantee
+  top-ups, returned charges, loyalty, booster and guaranteed additions, the DPF guarantee
+  cost, and residual additions (zero until reduction in yield is modelled).
+
+The reserving basis loads every expense, but not commission, by
+`1 + prudent_margin_expense`. Case shocks act as for TERM: `expense_add` raises the
+fixed initial and renewal amounts, `expense_mult` scales every expense, and an inflation
+shock changes the escalation.
+
+Start-of-month charges less acquisition costs and maintenance expenses earn a month's
+interest at the basis's rate: VROI (reserving), ROI (best estimate) or the reference
+forward rate (market consistent). `net_cashflows` is outgo less income including that
+interest, so it is positive when the general fund pays out.
+
+## Reserves and floors
+
+- Unit reserve: the expected closing value of the active, paid-up and DPF funds.
+- General fund reserve (DCF): the net cashflows discounted backwards at the basis's
+  rate, `pv(t) = (pv(t + 1) + cf(t)) / (1 + i(t))`, reported at the end of each month
+  (also at step 0). On a charge-funded contract it is usually negative.
+- Floors: the held general fund reserve is
+  `max(DCF, 0, reserve_floor_days / 365 x annual mortality charge)`, where the annual
+  charge is twelve times next month's mortality charge on the lives in force. On the
+  demo basis the zero or charge floor applies to most active policies.
+- Revival provision: `revival_strain_dpf` of the DPF fund plus `revival_strain_rpu` of
+  the paid-up funds.
+- Non-unit reserve = held general fund reserve + revival provision; total reserve =
+  unit reserve + non-unit reserve. Per-policy values divide by the lives in force plus
+  those maturing in the month (at least 1e-6).
+- Sum at risk: active cover above the units for the lives in force at the month's end,
+  plus the paid-up cohort's cover scaled to its survivors.
+
+## Profit and segments
+
+The profit signature is on the best-estimate basis, as for the other products:
+
+```
+profit before tax = BE net cashflow - increase in reserves + interest on the reserve
+profit transfer   = profit before tax x profit_transfer_rate
+tax               = (profit before tax - profit transfer) x Tax Rate
+cost of capital   = increase in capital - interest on capital x (1 - Tax Rate - profit_transfer_rate)
+```
+
+The BE net cashflow is the general fund's net cashflow, income positive. The reserve
+is the reserving basis's non-unit reserve per policy held for the best-estimate lives.
+Interest on it is at ROI.
+
+The unit segment's profit, computed on every basis, is the allocated premium, the
+additions and the investment return credited to the units (including the DPF credit),
+less the charges, unit-funded benefits and withdrawals taken from them, less the
+increase in the unit reserve. It is nil every month. The insurer's profit arises
+entirely in the non-unit segment: `non_unit_segment_profit` is the profit before tax,
+and `total_profit` adds the two.
+
+## Solvency capital
+
+Required capital on basis b (best estimate and market consistent) is
+`max(factor1 x (unit reserve + non-unit reserve) + factor2 x sum at risk, 0) x
+target_capital_ratio`. Here the non-unit reserve is the reserving basis's per-policy
+reserve held for basis b's lives. The sum-at-risk part stops in the month of maturity.
+Variants with a maturity guarantee (`gmmb_on` 1) use
+`reserve_capital_factor_guarantee` and `sar_capital_factor_guarantee`; the others use
+the `_no_guarantee` factors. Capital is zero at the valuation instant and earns interest
+at the basis's general fund rate. The demo factors are illustrative inputs, not
+verified regulatory values.
+
+## Market-consistent embedded value
+
+The `mc` basis projects the whole model again on the reference forward rate. When
+`mc_fund_return_source` is 0, every fund and the DPF grow at that rate, and the general
+fund earns it too. When it is 1, the funds take the best-estimate asset-mix returns
+(for risk-neutral scenario sets). The BE path is not simply discounted again.
+
+- PVFP: the present value at the reference rate of the mc profit after transfer and
+  tax (end-of-month discounting). `pv_premium` uses start-of-month discounting.
+- Frictional cost: `interest on mc capital x (Tax Rate + (1 - Tax Rate) x
+  profit_transfer_rate)`, the leakage on the return earned by capital. FCC is its
+  present value.
+- CRNHR: `cost_of_capital_rate / 12` of the mc capital each month, discounted.
+- VIF = PVFP - FCC - CRNHR.
+- BEL = mc unit reserve + `gf_bel`. Here `gf_bel` is the present value of the mc
+  general fund net cashflows, positive when the general fund owes. `bel_pp` divides by
+  the mc lives and is empty after the last exit.
+
+## Outputs
+
+Aggregate entries, per layer `reserving`, `BE` and `MC`:
+
+- `decrements_*` (every basis): lives by state at the start and end of the month,
+  deaths, surrenders, cessations, paid exits, transfers to the DPF and paid-up, DPF
+  releases, paid-up expiries and maturities.
+- `cashflows_*` (reserving and BE): premiums, allocated premiums, each charge (and by
+  timing), unit funds by state and `unit_reserve`, unit and general-fund benefits by
+  kind, commission and each expense, residual additions, interest, `net_cashflows`,
+  `gf_reserve_dcf`, `gf_reserve_floor`, `gf_reserve_held`, `revival_provision`,
+  `non_unit_reserve`, `total_reserve`, the per-policy reserves and `sum_at_risk`.
+- BE only: the profit chain, `unit_segment_profit`, `non_unit_segment_profit`,
+  `total_profit`, `part1_sm`, `part2_sm` and the capital columns.
+- `MCEV_*_MC`: the mc profit chain and capital, frictional cost, CRNHR, `pvfp`,
+  `pv_premium`, `fcc`, `crnhr`, `vif`, `gf_bel`, `bel` and `bel_pp`.
+
+The aggregate per-policy reserves and `bel_pp` are ratios of the held amounts to the
+eligible lives. The seriatim file holds, per policy at step 0: the reserving unit
+reserve, held general fund reserve and total reserve; the mc BEL, PVFP and VIF; the
+BE sum at risk; and the annualised premium. `Output_seriatim_cf_flag` 1 writes every
+entry per policy and month. The generated
+[output column reference](../reference/output-columns.md) lists every name.
+
+## Checks
+
+The test suite holds the model specification's verification checks on a 1,000-policy
+demo book: lives exhaust across the three states, the unit funds reconcile every
+month, charge income equals the charges taken from the units item by item, the sum at
+risk is never negative and is nil above the floors, there is no mortality charge
+without a sum at risk, the backward recursion equals discounted summation, the floors
+hold, the reserve roll-forward ties, the DPF never credits below its guaranteed rate,
+the funds are nil after maturity, the unit segment profit is nil and the mc funds grow
+at the risk-free rate.
+
+The check that the reserving reserve is at least the BEL fails for some demo
+policies. On the demo basis, 29 of 1,000 policies fail it, all of them
+return-of-charges variants whose general fund reserve is positive. The reserving basis
+grows the funds at the best-estimate return less 0.5% a year, so it counts more future
+fund management charge income than the mc basis, which grows them at the risk-free
+rate. A wider `fund_return_margin` reduces the breaches. The tests report the margin
+per variant and mark this check as a known failure of the demo calibration.
+
+An independent scalar model in `tests/unit_linked/oracle.py` reimplements the product
+from this design. It reconciles every output column for six policies, every basis and
+every month within the repository's parity tolerances.
+
+## Stochastic use
+
+One compiled kernel runs a supplied or generated multi-path scenario set (see
+[economic scenarios](../scenarios.md)); outputs gain a leading `Scenario` column. With
+`mc_fund_return_source` 0 the mc projection is the certainty equivalent and agrees on
+every path. The mc profit chain and capital still vary by path, because they hold the
+reserving basis's reserve, whose funds follow each path's returns. For a risk-neutral
+set, set `mc_fund_return_source` 1 so that the mc funds follow the paths.
+
+## Performance
+
+On the maintainer's Windows laptop (seed-209 demo, 372 months, three bases, one
+scenario): a cold compile of the 815-column kernel takes about two minutes, and a
+cached load takes about 8 seconds. A 10,000-policy valuation took 68 s wall time
+(38 s projecting). A 100,000-policy valuation took 379 s (329 s projecting).
+
+## Known simplifications
+
+Monthly time step; static fund allocation (no switching); partial withdrawals as a
+continuous drawdown rate; the DPF and reduced paid-up states as single cohorts per
+policy; revival only as a strain provision; no residual additions until reduction in
+yield is modelled; tax applied symmetrically (a loss earns a full credit); no
+reinsurance, riders, top-ups or settlement options; GST on charges not modelled.
 
 ## Not modelled
 
