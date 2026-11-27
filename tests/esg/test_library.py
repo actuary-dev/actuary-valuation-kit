@@ -101,11 +101,46 @@ def test_scenario_parquet_round_trips_exactly(tmp_path):
     np.testing.assert_array_equal(loaded.variables["roi"].view(np.uint64), values.view(np.uint64))
 
 
-def test_scenario_parquet_rejects_unequal_weights(tmp_path):
+def test_scenario_parquet_round_trips_unequal_weights(tmp_path):
     from avk.esg.library import write_parquet
 
     paths = ScenarioSet(
         {"roi": [[0.0], [0.1]]}, ("1", "2"), np.array([0.25, 0.75]), "real_world", {}, (1, 2)
     )
-    with pytest.raises(InputError, match="equal weights"):
-        write_parquet(paths, tmp_path / "lossy.parquet")
+    path = write_parquet(paths, tmp_path / "weighted.parquet")
+    loaded = SuppliedScenarios(
+        path, [ScenarioVariable("roi", "curve", "roi", "lag")], {"Measure": "real_world"}
+    ).generate({}, 1)
+    assert loaded.ids == paths.ids
+    np.testing.assert_array_equal(loaded.weights, paths.weights)
+
+
+@pytest.mark.parametrize(
+    "weights",
+    [
+        [None, 0.75, 0.25, 0.75],
+        [-0.25, 0.75, -0.25, 0.75],
+        [float("inf"), 0.75, float("inf"), 0.75],
+        [float("nan"), 0.75, float("nan"), 0.75],
+        [0.25, 0.75, 0.20, 0.75],
+        [0.25, 0.625, 0.25, 0.625],
+    ],
+)
+def test_supplied_scenarios_reject_invalid_weights(tmp_path, weights):
+    import polars as pl
+
+    path = tmp_path / "weighted.parquet"
+    pl.DataFrame(
+        {
+            "Scenario": [2, 10, 2, 10],
+            "Month": [1, 0, 0, 1],
+            "Seed": [4, 9, 4, 9],
+            "Weight": weights,
+            "roi": [0.1, 0.0, 0.0, 0.2],
+        }
+    ).write_parquet(path)
+    reader = SuppliedScenarios(
+        path, [ScenarioVariable("roi", "curve", "roi", "lag")], {"Measure": "real_world"}
+    )
+    with pytest.raises(InputError, match="Weight"):
+        reader.generate({}, 2)

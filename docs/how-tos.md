@@ -53,6 +53,8 @@ See [the bridge notebook](../notebooks/rollforward.ipynb).
 Generate seeded paths, export them to Parquet, or build deterministic
 illustration and shock paths with `avk scenarios`. See the worked TERM
 example and the settings and file layouts in [economic scenarios](scenarios.md).
+For weighted summaries, the risk-neutral PV comparison and dynamic lapse, see
+[stochastic UNIT_LINKED valuation](unit-linked-stochastic.md).
 
 ## Python API
 This complete script runs an invented book and prints the files written:

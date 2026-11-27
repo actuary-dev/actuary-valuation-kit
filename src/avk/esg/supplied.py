@@ -4,17 +4,19 @@ The file has one row per scenario and month,
 with the columns `Scenario` (an integer scenario number), `Seed` (the integer seed that
 generated it, constant within a scenario), `Month` (0 to the horizon less one) and one column
 per scenario variable the product declares, exactly those. `Settings: {Measure: ...}` names
-the measure (`real_world` or `risk_neutral`); there is no default. Scenarios are equally
-weighted and processed in scenario-number order. Use `avk scenarios` or an external
-generator to prepare the file.
+the measure (`real_world` or `risk_neutral`); there is no default. An optional numeric
+`Weight` column gives each scenario's probability in every month. Without it, scenarios
+are equally weighted. Paths are processed in scenario-number order.
 """
 
 import hashlib
+import math
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
 import numpy as np
+import numpy.typing as npt
 import polars as pl
 
 from avk.assumptions.context import ScenarioVariable
@@ -25,7 +27,19 @@ from avk.runtime.errors import InputError
 from avk.runtime.progress import fingerprint
 
 KEYS = ("Scenario", "Seed", "Month")
+WEIGHT = "Weight"
 MEASURES = ("real_world", "risk_neutral")
+
+
+def validate_weights(weights: npt.NDArray[np.float64], where: str) -> None:
+    if (
+        not np.isfinite(weights).all()
+        or ((weights < 0) | (weights > 1)).any()
+        or not math.isclose(math.fsum(weights), 1.0, rel_tol=0, abs_tol=1e-12)
+    ):
+        raise InputError(
+            f"{where}: scenario Weight values must be finite, in [0, 1] and sum to one"
+        )
 
 
 class SuppliedScenarios(EconomicScenarioGenerator):
@@ -53,7 +67,7 @@ class SuppliedScenarios(EconomicScenarioGenerator):
         missing = sorted(set((*KEYS, *self.names)) - set(frame.columns))
         if missing:
             raise InputError(f"{where}: missing columns {missing}")
-        extra = sorted(set(frame.columns) - set((*KEYS, *self.names)))
+        extra = sorted(set(frame.columns) - set((*KEYS, WEIGHT, *self.names)))
         if extra:
             raise InputError(f"{where}: unknown scenario variables {extra}")
         for key in KEYS:
@@ -61,12 +75,24 @@ class SuppliedScenarios(EconomicScenarioGenerator):
                 raise InputError(f"{where}: {key} must hold integers in every row")
         frame = frame.sort("Scenario", "Month")
         numbers = frame["Scenario"].unique(maintain_order=True)
+        if not len(numbers):
+            raise InputError(f"{where}: expected at least one scenario")
         months = np.tile(np.arange(horizon), len(numbers))
         if frame.height != len(months) or not np.array_equal(frame["Month"].to_numpy(), months):
             raise InputError(f"{where}: every scenario needs months 0 to {horizon - 1}, once each")
         seeds = frame.group_by("Scenario", maintain_order=True).agg(pl.col("Seed").unique())
         if (seeds["Seed"].list.len() != 1).any():
             raise InputError(f"{where}: a scenario's Seed must be the same in every month")
+        weights = np.full(len(numbers), 1 / len(numbers))
+        if WEIGHT in frame.columns:
+            weight = frame[WEIGHT]
+            if not weight.dtype.is_numeric() or weight.null_count():
+                raise InputError(f"{where}: Weight must be numeric and present in every row")
+            by_month = weight.cast(pl.Float64).to_numpy().reshape(len(numbers), horizon)
+            weights = by_month[:, 0]
+            validate_weights(weights, where)
+            if not (by_month == weights[:, None]).all():
+                raise InputError(f"{where}: a scenario's Weight must be the same in every month")
         variables = {}
         for name in self.names:
             values = frame[name].cast(pl.Float64).to_numpy()
@@ -77,7 +103,7 @@ class SuppliedScenarios(EconomicScenarioGenerator):
         return ScenarioSet(
             variables,
             tuple(str(number) for number in numbers.to_list()),
-            np.full(len(numbers), 1 / len(numbers)),
+            weights,
             self.measure,
             {"source": "parquet", "path": str(self.path), "sha256": digest},
             tuple(int(seed[0]) for seed in seeds["Seed"].to_list()),

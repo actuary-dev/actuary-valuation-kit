@@ -10,7 +10,7 @@ import numpy as np
 import numpy.typing as npt
 import polars as pl
 
-from avk.esg.supplied import KEYS
+from avk.esg.supplied import KEYS, WEIGHT, validate_weights
 from avk.inputs.formats import FormatSpec
 from avk.inputs.public_formats import numbers
 from avk.model.data import ScenarioSet
@@ -154,12 +154,12 @@ def _integer_column(values: tuple[int, ...], name: str) -> npt.NDArray[np.intege
 
 
 def write_parquet(scenarios: ScenarioSet, path: Path) -> Path:
-    """Write a rectangular, equally weighted scenario set for SuppliedScenarios."""
+    """Write a rectangular scenario set for SuppliedScenarios."""
     count, horizon = next(iter(scenarios.variables.values())).shape
-    if not np.all(scenarios.weights == 1 / count):
-        raise InputError("Scenario Parquet requires equal weights")
-    if scenarios.variables.keys() & set(KEYS):
-        raise InputError(f"Scenario variables cannot use the reserved Parquet columns {KEYS}")
+    validate_weights(scenarios.weights, "Scenario Parquet")
+    reserved = (*KEYS, WEIGHT)
+    if scenarios.variables.keys() & set(reserved):
+        raise InputError(f"Scenario variables cannot use the reserved Parquet columns {reserved}")
     ids: tuple[int, ...]
     if scenarios.ids == ("deterministic",):
         ids = (1,)
@@ -175,11 +175,17 @@ def write_parquet(scenarios: ScenarioSet, path: Path) -> Path:
         if scenarios.ids != ("deterministic",):
             raise InputError("Scenario Parquet requires one Seed per scenario")
         seeds = (0,)
+    weights = (
+        {}
+        if np.all(scenarios.weights == 1 / count)
+        else {WEIGHT: np.repeat(scenarios.weights, horizon)}
+    )
     frame = pl.DataFrame(
         {
             "Scenario": np.repeat(_integer_column(ids, "Scenario"), horizon),
             "Seed": np.repeat(_integer_column(seeds, "Seed"), horizon),
             "Month": np.tile(np.arange(horizon, dtype=np.int64), count),
+            **weights,
             **{name: values.ravel() for name, values in scenarios.variables.items()},
         }
     )

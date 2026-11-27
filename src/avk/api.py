@@ -15,6 +15,7 @@ from avk.runs.config import RunConfig as RunConfig
 from avk.runs.config import load_run_config as load_run_config
 from avk.runs.context import RunResult as RunResult
 from avk.runs.registry import run as run_config
+from avk.runs.scenario_statistics import tvog as tvog
 from avk.runtime.errors import AvkError as AvkError
 from avk.runtime.errors import ConfigError as ConfigError
 from avk.runtime.errors import FormulaError as FormulaError

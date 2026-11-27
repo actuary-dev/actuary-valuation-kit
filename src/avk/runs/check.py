@@ -403,6 +403,8 @@ def _check_single(
         and all(shared.assumptions[name] is curve for name, curve in curves.items())
         else generator.generate(curves, months)
     )
+    if cfg.scenario_summary is not None and len(report.scenarios.ids) < 2:
+        raise ConfigError("Scenario_Summary requires multiple scenario paths")
 
     if dump_inputs is not None:
         report.dumps = diagnostics.assumption_dumps(assumptions, parameters, inputs, cfg)

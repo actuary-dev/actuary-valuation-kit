@@ -32,13 +32,19 @@ from avk.model.kernel import Kernel
 from avk.outputs.names import file_name
 from avk.outputs.schema import CALENDAR, POLICY, STEP, OutputSchema
 from avk.outputs.sinks import CsvSink, CsvStream
-from avk.outputs.writers import write_aggregate, write_per_policy_month, write_seriatim
+from avk.outputs.writers import (
+    write_aggregate,
+    write_per_policy_month,
+    write_scenario_summary,
+    write_seriatim,
+)
 from avk.runs.batching import batch_size
 from avk.runs.cases import case_parameters, impact_rows
 from avk.runs.check import CheckReport, check, run_factory
 from avk.runs.compile import product_kernel
 from avk.runs.context import RunContext, RunResult
 from avk.runs.registry import RunType
+from avk.runs.scenario_statistics import summarize
 from avk.runtime.errors import ConfigError, OutputError
 
 BASE = "Base"
@@ -112,7 +118,7 @@ class Valuation(RunType):
         baselines: dict[str, dict[str, float]] = {}
         for case in (None, *cases):
             name = case.name if case is not None else BASE
-            for code, child in products.items():
+            for code in products:
                 checked_case = report.case_reports[name] if case is not None else report
                 inputs = checked_case.products[code] if checked_case.products else checked_case
                 destination = ctx.output / name if case is not None else ctx.output
@@ -128,7 +134,11 @@ class Valuation(RunType):
                     0.0,
                     case_name=name,
                     kernel=kernels[code],
-                    parameters=case_parameters(case, child.config.projection_term * 12),
+                    parameters=case_parameters(
+                        case,
+                        inputs.config.projection_term * 12,
+                        dynamic_lapse=inputs.config.dynamic_lapse,
+                    ),
                 )
                 results.append(result)
                 files.extend(result.files)
@@ -171,7 +181,10 @@ class Valuation(RunType):
         assert report.points is not None and report.scenarios is not None
         months = cfg.projection_term * 12
         # The run type's own parameters, then the case's (the base's are neutral).
-        run_parameters = {**self.parameters, **(parameters or case_parameters(None, months))}
+        run_parameters = {
+            **self.parameters,
+            **(parameters or case_parameters(None, months, dynamic_lapse=cfg.dynamic_lapse)),
+        }
         if ctx.diagnostics is not None and case_name != BASE:
             # A case shares the base's input dumps; it adds what it changes.
             _write_dumps(
@@ -363,6 +376,24 @@ class Valuation(RunType):
                 aggregate[output] = value[0] if first else value
             name = file_name(factory.code, case_name, "aggregate_output")
             files.append(write_aggregate(sink, name, schema, aggregate, scenarios=scenarios))
+            if (summary := cfg.scenario_summary) is not None:
+                columns = {
+                    output: summarize(
+                        values,
+                        report.scenarios.weights,
+                        summary.percentiles,
+                        summary.cte_levels,
+                        summary.tail,
+                    )
+                    for output, values in aggregate.items()
+                }
+                statistics = (
+                    "Mean",
+                    *(f"P_{level}" for level in summary.percentiles),
+                    *(f"CTE_{level}" for level in summary.cte_levels),
+                )
+                name = file_name(factory.code, case_name, "scenario_summary")
+                files.append(write_scenario_summary(sink, name, schema, columns, statistics))
             if sliced:
                 values = {
                     output: projection.slices[0, k] if first else projection.slices[:, k]

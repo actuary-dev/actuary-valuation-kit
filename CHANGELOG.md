@@ -4,6 +4,10 @@
 
 - Generate correlated lognormal economic scenarios in valuation runs. Export them
   to supplied-scenario Parquet or build deterministic paths with `avk scenarios`.
+- Summarize multi-path valuation aggregates with weighted means, percentiles and
+  conditional tail expectations. Supplied scenario Parquet accepts optional path weights.
+- Add a risk-neutral TVOG helper to `avk.api` and optional basis-specific dynamic
+  surrender for UNIT_LINKED. The stochastic UNIT_LINKED tutorial works through both.
 - Add the UNIT_LINKED input contract: policy table `policies_ul`, fund holdings
   companion table `policy_funds_ul`, fund universe, variant, charge-scale and
   regulatory-cap tables with formats `avk_ul_keyed_v1` and `avk_ul_year_key_v1`,

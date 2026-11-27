@@ -48,6 +48,36 @@ def write_aggregate(
     return sink.write_table(name, pl.DataFrame(data))
 
 
+def write_scenario_summary(
+    sink: CsvSink,
+    name: str,
+    schema: OutputSchema,
+    columns: Mapping[str, Array],
+    statistics: Sequence[str],
+) -> Path:
+    """Write rows in aggregate column order, then projection step order."""
+    names = [output for output, _, _ in schema.entries]
+    if names:
+        months = columns[names[0]].shape[1]
+        values = np.concatenate([columns[output] for output in names], axis=1)
+    else:
+        months = 0
+        values = np.empty((len(statistics), 0))
+    return sink.write_table(
+        name,
+        pl.DataFrame(
+            {
+                schema.step: np.tile(np.arange(months, dtype=np.int64), len(names)),
+                "Output_Column": pl.Series(np.repeat(names, months), dtype=pl.String),
+                **{
+                    label: pl.Series(series, nan_to_null=True)
+                    for label, series in zip(statistics, values, strict=True)
+                },
+            }
+        ),
+    )
+
+
 def write_per_policy_month(
     stream: Stream,
     schema: OutputSchema,
