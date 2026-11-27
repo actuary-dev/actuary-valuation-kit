@@ -2,13 +2,143 @@
 
 import argparse
 import sys
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
+from typing import Any
 
-from avk.api import check, compile, run, version
+from avk.api import (
+    check,
+    compile,
+    run,
+    ul_compliance,
+    ul_illustration,
+    ul_residual_additions,
+    version,
+)
 from avk.demo.generate import add_generate_arguments, generate
 from avk.runs.scenarios import generate_scenarios, scenario_library
 from avk.runtime.errors import AvkError
+
+
+def _numbers(kind: type[int] | type[float]) -> Callable[[str], list[Any]]:
+    """An argparse type for a comma separated list of numbers."""
+
+    def parse(text: str) -> list[Any]:
+        try:
+            return [kind(part) for part in text.split(",") if part.strip()]
+        except ValueError as error:
+            raise argparse.ArgumentTypeError(
+                f"expected comma separated numbers: {text!r}"
+            ) from error
+
+    return parse
+
+
+def _add_ul_arguments(commands: Any) -> None:
+    """The unit-linked compliance commands."""
+    unit_linked = commands.add_parser("ul", help="Unit-linked compliance: RIY and illustrations")
+    actions = unit_linked.add_subparsers(dest="action", required=True)
+    compliance = actions.add_parser(
+        "compliance", help="Test every variant against the reduction-in-yield caps"
+    )
+    compliance.add_argument("config")
+    compliance.add_argument("--root")
+    compliance.add_argument("--rates", type=_numbers(float), default=[0.04, 0.08])
+    compliance.add_argument("--terms", type=_numbers(int), default=[10, 20, 30])
+    compliance.add_argument("--frequencies", type=_numbers(int), default=[1, 12])
+    compliance.add_argument("--premiums", type=_numbers(float), default=None)
+    compliance.add_argument("--fund", default=None)
+    compliance.add_argument("--output", help="folder for the CSV files")
+    compliance.add_argument(
+        "--strict", action="store_true", help="exit 1 if any case fails at any gross return"
+    )
+    illustration = actions.add_parser(
+        "illustration", help="Benefit illustration of one policy by policy year"
+    )
+    illustration.add_argument("config")
+    illustration.add_argument("--policy", required=True, help="Policy Number")
+    illustration.add_argument("--root")
+    illustration.add_argument("--rates", type=_numbers(float), default=[0.04, 0.08])
+    illustration.add_argument("--output", help="folder for the CSV file")
+    additions = actions.add_parser(
+        "additions", help="Residual additions per policy and policy year"
+    )
+    additions.add_argument("config")
+    additions.add_argument("--policy", default=None, help="one Policy Number (default: all)")
+    additions.add_argument("--root")
+    additions.add_argument("--rates", type=_numbers(float), default=[0.04, 0.08])
+    additions.add_argument("--output", help="folder for the CSV file")
+
+
+def _ul_illustration(args: argparse.Namespace) -> int:
+    result = ul_illustration(
+        args.config, args.policy, root=args.root, rates=args.rates, output=args.output
+    )
+    table = result.table
+    print(f"Benefit illustration for {args.policy} ({table['Product_Variant'][0]})")
+    for rate in table["Gross_Return"].unique(maintain_order=True):
+        print(f"  gross return {rate:.2%}: year, fund value, death benefit, surrender value, RIY")
+        rows = table.filter(table["Gross_Return"] == rate)
+        last = rows["Policy_Year"].max()
+        for row in rows.iter_rows(named=True):
+            if row["Policy_Year"] % 5 and row["Policy_Year"] != last:
+                continue
+            surrender = row["Surrender_Value"]
+            riy_value = row["RIY"]
+            print(
+                f"    {row['Policy_Year']:>3}  {row['Fund_Value']:>14,.2f}"
+                f"  {row['Death_Benefit']:>14,.2f}"
+                f"  {'maturity' if surrender is None else format(surrender, ',.2f'):>14}"
+                f"  {'' if riy_value is None else format(riy_value, '.4%'):>8}"
+            )
+    for path in result.files:
+        print(f"  {path}")
+    return 0
+
+
+def _ul_additions(args: argparse.Namespace) -> int:
+    result = ul_residual_additions(
+        args.config, root=args.root, rates=args.rates, policy=args.policy, output=args.output
+    )
+    table = result.table
+    needed = table.filter(table["Residual_Addition"] > 0)
+    policies = table["Policy_Number"].n_unique()
+    print(
+        f"{policies} policies tested; {needed['Policy_Number'].n_unique()} need a residual "
+        f"addition in {needed.height} policy-year results"
+    )
+    if result.skipped:
+        print(f"  {len(result.skipped)} policies are not premium-paying and were skipped")
+    for path in result.files:
+        print(f"  {path}")
+    return 0
+
+
+def _ul_command(args: argparse.Namespace) -> int:
+    if args.action == "illustration":
+        return _ul_illustration(args)
+    if args.action == "additions":
+        return _ul_additions(args)
+    report = ul_compliance(
+        args.config,
+        root=args.root,
+        rates=args.rates,
+        terms=args.terms,
+        frequencies=args.frequencies,
+        premiums=args.premiums,
+        fund=args.fund,
+        output=args.output,
+    )
+    columns = [name for name in report.variants.columns if name.startswith("Status_")]
+    print("Reduction in yield against the caps, worst status over each variant's cases")
+    for row in report.variants.iter_rows(named=True):
+        statuses = "  ".join(f"{name[7:]}: {row[name]}" for name in columns)
+        print(f"  {row['Variant']:<26} {row['Regime']:<12} {row['Cases']:>3} cases  {statuses}")
+    failed = report.summary.filter(~report.summary["Status"].is_in(["pass", "pass_with_additions"]))
+    print(f"{failed.height} of {report.summary.height} case results fail")
+    for path in report.files:
+        print(f"  {path}")
+    return 1 if args.strict and failed.height else 0
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -50,6 +180,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         demo = commands.add_parser("demo", help="Work with invented demonstration books")
         demo_actions = demo.add_subparsers(dest="action", required=True)
         add_generate_arguments(demo_actions.add_parser("generate", help="Generate a demo book"))
+        _add_ul_arguments(commands)
         scenarios = commands.add_parser("scenarios", help="Write supplied scenario files")
         scenario_actions = scenarios.add_subparsers(dest="action", required=True)
         scenario_generate = scenario_actions.add_parser(
@@ -64,6 +195,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         library.add_argument("library_file", type=Path)
         library.add_argument("folder", type=Path)
         args = parser.parse_args(argv)
+        if args.command == "ul":
+            return _ul_command(args)
         if args.command == "demo":
             print(generate(args.folder, args.product, args.count, args.seed))
         elif args.command == "scenarios":
