@@ -28,8 +28,9 @@ rejected with `UNIT_LINKED supports the Valuation run type only`. It has three b
 
 ## Timing conventions
 
-Policies mature in the final month of their term. For a policy that has already
-matured at the valuation date, step 0 holds its maturity value in the unit reserve.
+Policies mature in the final month of their term. A policy whose term ends in the
+valuation month matures at the valuation date, and step 0 holds its maturity value
+in the unit reserve.
 The policy settles in projection month 1 from those balances, with the applicable
 return of charges and maturity guarantee. No premiums, charges, investment returns,
 decrements, rebalancing or additions apply in that settlement month.
