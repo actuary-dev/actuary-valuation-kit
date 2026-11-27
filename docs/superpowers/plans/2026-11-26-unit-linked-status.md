@@ -132,3 +132,27 @@ merged, blocked.
   outputs byte-identical with dynamic lapse off. No copied spec text. Integration item 3:
   wire `MCEV_pvfp_MC`, `MCEV_bel_MC`, `MCEV_vif_MC` and the path-discounted guarantee costs
   into the TVOG comparison.
+- 2026-11-28 P2b done (session report: 495 default tests, 1 strict xfail for check 9, 9
+  slow, all checks pass; 10k valuation 68 s wall, 100k 379 s). Merged LOCALLY into
+  feature/unit-linked as 2f9cbe4 (CHANGELOG conflict kept both sides). NOT PUSHED: the
+  combined P2b + P3 checks have not been run yet. The orchestrator stopped here at a usage
+  limit. Resume steps:
+  1. Run ruff, format, mypy, lint-imports, the reference and fund-slot generator checks,
+     and `pytest tests/unit_linked tests/regression/test_demo_suite.py`, then push.
+  2. Reword two phrases close to the spec: `docs/products/unit-linked.md` ("insurer's profit
+     arises entirely in the non-unit segment", and "sum at risk is never negative and is nil
+     above the floors") and the `mcev.py` docstring ("not the capital lock-up itself").
+  3. Merge `ul/p6a-unit-features` (9fcd327). A trial merge was aborted. It conflicts in
+     the generator (keep both total tuples: P2b's `fund_growth_total` and `rpu_growth_total`
+     and P6a's `topup_close_total` and `withdrawable_total`), in `output_columns.py` (P2b's
+     version plus P6a's `HIGHEST_NAV` constant), and in `factory.py` (union of imports; P6a's
+     `valuation_output_schema` must iterate P2b's `LAYERS` dict instead of
+     `BASIS_SUFFIXES`), plus the docs. Then regenerate `fund_slots.py`, and check that the
+     UL saved results stay byte-identical.
+  4. Merge `ul/p4b-stochastic` (dd12ceb).
+  5. Integration pass, in Codex: switch charges into P2b's charge split and unit segment;
+     residual additions into the general fund and units; TVOG wiring to the MCEV columns;
+     the P3 illustration's exclusions documented.
+  6. P5 in Codex from plan `2026-11-27-ul-p5-ifrs17-stress.md`, then P6b.
+  Maintainer items from P2b: check 9 (reserving `fund_return_margin`, 29 of 1,000 demo
+  policies breach at -0.5%); the demo capital factors are unverified.
