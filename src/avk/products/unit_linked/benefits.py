@@ -31,6 +31,8 @@ class UnitSegment(Component):
         "maturities_R",
         "mc_cum_pp",
         "mc_pp",
+        "nav_excess_A_pp",
+        "nav_excess_R",
         "pac_cum_pp",
         "pac_pp",
         "paid_out_A",
@@ -47,6 +49,7 @@ class UnitSegment(Component):
         "rpu_tpp_open",
         "sa_eff",
         "surrenders_R",
+        "switch_charge_pp",
         "tpp_pp",
     )
 
@@ -89,7 +92,8 @@ class UnitSegment(Component):
         return self.policy.V_gmmb_on * max(
             self.policy.V_gmmb_premium_multiple * self.tpp_pp(t)
             - self.fund_close_total(t)
-            - self.roc_pp(t),
+            - self.roc_pp(t)
+            - self.nav_excess_A_pp(t),
             0,
         )
 
@@ -139,9 +143,16 @@ class UnitSegment(Component):
         """Expected general-fund maturity top-up for paid-up lives."""
         return self.policy.V_gmmb_on * max(
             self.policy.V_gmmb_premium_multiple * self.rpu_tpp_open(t) * self.maturity_share_R(t)
-            - self.maturity_unit_R(t),
+            - self.maturity_unit_R(t)
+            - self.nav_excess_R(t) * self.maturity_share_R(t),
             0,
         )
+
+    def highest_nav_cost(self, t):
+        """Expected maturity payment above the active and paid-up unit values."""
+        return self.maturities_A(t) * self.nav_excess_A_pp(t) + self.maturity_share_R(
+            t
+        ) * self.nav_excess_R(t)
 
     def partial_withdrawal_outgo(self, t):
         """Disbursements from active unit funds for withdrawals."""
@@ -179,6 +190,7 @@ class UnitSegment(Component):
             + self.maturity_guarantee_R(t)
             + self.addition_outgo(t)
             + self.dpf_guarantee_cost(t)
+            + self.highest_nav_cost(t)
         )
 
     def allocated_premiums(self, t):
@@ -216,7 +228,12 @@ class UnitSegment(Component):
             + self.rpu_fmc_total(t)
             + self.dpf_fmc(t)
             + self.disc_charge_income(t)
+            + self.switch_charge_income(t)
         )
+
+    def switch_charge_income(self, t):
+        """Switch charges funded from the active units sold."""
+        return self.switch_charge_pp(t) * self.A_begin(t)
 
     def unit_reserve_A(self, t):
         """Expected active unit reserve after exits."""

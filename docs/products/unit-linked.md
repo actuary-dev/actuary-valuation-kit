@@ -10,8 +10,10 @@ guarantee and regulatory caps.
 
 **Status.** Phase P2a adds the unit projection on all three bases. Valuation reports
 lives by state, premiums, unit funds and charges, and the unit and general-fund
-shares of benefits. The Discontinued Policy Fund and reduced paid-up state each
-pool expected balances and lives into a single cohort per policy. General-fund
+shares of benefits. Phase P6a adds top-ups, lifecycle and systematic transfer
+strategies, and a highest-NAV maturity guarantee. The Discontinued Policy Fund
+and reduced paid-up state each pool expected balances and lives into a single
+cohort per policy. General-fund
 expenses, reserves, profit, capital and MCEV are phase P2b.
 
 Run the invented demo:
@@ -43,8 +45,9 @@ general-fund cost are zero.
 
 ## Policy table `policies_ul`
 
-One row per policy. Every column is required and no value may be missing; nothing
-defaults. Dates are `YYYY-MM-DD` (or the other layouts the policy readers accept).
+One row per policy. Contract and history columns are required. The feature
+columns below state when they are optional. Dates are `YYYY-MM-DD` (or the other
+layouts the policy readers accept).
 
 | Column | Type | Meaning and rules |
 |---|---|---|
@@ -72,6 +75,19 @@ defaults. Dates are `YYYY-MM-DD` (or the other layouts the policy readers accept
 | Status Date | date | The date the current status began; Policy Start Date <= Status Date <= valuation date |
 | Paid Up Sum Assured | amount | Positive if and only if Policy Status is 2 |
 | Date Of Last Premium Paid | date | History (not read yet) |
+| Fund Strategy | integer | Optional key of `ul_strategies`. An absent column or 0 selects no strategy. |
+
+Variants with `topup_on = 1` require the following policy columns and the
+`Top-Up Units` holding column. An off variant accepts absent top-up columns
+or explicit zeros. Supplied top-up fields must be finite and nonnegative.
+
+| Column | Type | Meaning and rules |
+|---|---|---|
+| Single Top-Up Premium | amount | Future one-off payment. Use 0 if absent. |
+| Single Top-Up Policy Month | integer | Future policy month within term for a positive single top-up. Use 0 with a zero amount. |
+| Regular Top-Up Premium | amount | Amount per remaining regular base premium due. Use 0 if absent. |
+| Top-Up Premiums Paid To Date | amount | Historical gross top-ups included in Premiums Paid To Date |
+| Last Top-Up Policy Month | integer | Last historical top-up month at or before valuation, or 0 for no top-up history |
 
 History to date, for retrospective calculations (amounts, nonnegative): Premiums Paid
 To Date (at least the sum of Premiums Allocated To Fund over the policy's holdings),
@@ -89,7 +105,7 @@ value), Measurement Model (VFA or GMM), Legal Entity (text).
 ## Fund holdings table `policy_funds_ul`
 
 One row per policy and fund held: a companion table of the policy table, read once
-per run and joined to each batch of policies. Every column is required.
+per run and joined to each batch of policies. Only `Top-Up Units` is conditional.
 
 | Column | Meaning and rules |
 |---|---|
@@ -101,7 +117,8 @@ per run and joined to each batch of policies. Every column is required.
 | Premium Allocation | Fraction of future premiums in [0, 1]; 0 for non-selectable funds; a premium-paying policy (status 0 within its payment term) sums to 1 within 1e-9 |
 | Fund Entry Date | On or before the valuation date |
 | Premiums Allocated To Fund, Units Allocated To Date, Units Cancelled To Date, Switches In To Date, Switches Out To Date | History, nonnegative (not read yet) |
-| Guaranteed Unit Price | Highest NAV recorded for a guaranteed fund, else 0 (not read yet) |
+| Guaranteed Unit Price | Opening highest NAV of a holding with an enabled highest-NAV guarantee. At least the current price in the window and 0 before the window. |
+| Top-Up Units | Opening units funded by top-ups. Required when `topup_on = 1`. At most Units and 0 for a DPF holding. |
 
 Every policy holds at least one row. A policy holds at most `MAX_FUND_SLOTS` (5)
 funds outside the DPF. A status-1 policy holds exactly one row, in the DPF; other
@@ -120,7 +137,7 @@ Format `avk_ul_keyed_v1` (key = Fund Code). Fields:
 | w_eq_large ... w_real_assets | [0, 1], sum 1 within 1e-12 | Asset mix over the ten asset classes |
 | selectable | 0 or 1 | 1 the fund may receive premiums |
 | is_dpf | 0 or 1 | Exactly one fund has 1, and it has selectable 0 |
-| guarantee_type | 0, 1, 2 | 0 none, 1 highest NAV, 2 capital protection (mechanics in a later phase) |
+| guarantee_type | 0, 1, 2 | 0 none, 1 highest NAV, 2 capital protection (later phase) |
 | risk_class | 1 to 5 | |
 
 Asset classes: eq_large, eq_mid, eq_small, eq_global, gov_long, gov_short,
@@ -153,11 +170,14 @@ Format `avk_ul_keyed_v1` (key = Product Variant). Every field is required:
 | disc_ap_threshold | >= 0 | Annualised premium above which the high discontinuance scale applies |
 | auto_rebalance | 0, 1 | Rebalance to the premium allocation each anniversary |
 | riy_additions_on | 0, 1 | Reduction-in-yield residual additions (phase P3) |
+| topup_on, topup_sa_multiple, topup_lock_in_months | 0/1, >= 0, integer >= 0 | Top-up enablement, additional insured cover per unit of gross top-up premium, and partial withdrawal lock |
+| switch_charge | >= 0 | Fixed charge per month with strategy sales, funded from the proceeds |
+| highest_nav_start_month | integer >= 0 | First included policy month of the highest-NAV window. Use 0 to disable. |
 
 ## Charge scales and regulatory caps
 
 `ul_charge_scales` (format `avk_ul_year_key_v1`, key = variant_id, policy years from
-1): premium_allocation_rate, admin_charge_monthly, loyalty_rate, booster_rate,
+1): premium_allocation_rate, topup_allocation_rate, admin_charge_monthly, loyalty_rate, booster_rate,
 disc_pct_low, disc_cap_low, disc_pct_high, disc_cap_high. Every variant_id has a
 scale and every scale key is a variant_id.
 
@@ -182,6 +202,11 @@ For a capped variant that can transfer to the DPF, the DPF FMC is checked before
 projection even when the book starts with no DPF holdings.
 The regime `UNCAPPED` sets caps_apply 0 and explicit non-binding values, so none of
 these checks applies.
+
+`topup_allocation_rate` is subject to `pac_max`. `switch_charge` is subject to
+`switch_charge_max`. An existing assumption pack can adopt the off settings by
+adding zero rows for the new variant fields and charge scale, and the strategy
+table with key 0. The demo basis includes these settings.
 
 The demo regime `IRDAI_2024` holds the caps of the Indian 2024 regulations as read
 for this teaching example. Verify them against the regulation before any other use,
@@ -220,12 +245,71 @@ Instalment_Premium, Instalments_Payable and the history fields), `V_<field>` for
 variant feature, R_dpf_min_rate, R_dpf_fmc_max and R_caps_apply from the regime, the
 DPF holding (DPF_Value, DPF_FMC, DPF_Alpha, `DPF_W_<asset>`) and five fund slots
 `Fund_k_*` (Present, Fund_Index, Allocation, Value, FMC, Alpha, `W_<asset>`,
-Premiums_Allocated, Guaranteed_Price). Slots are filled in the order of the funds'
+Premiums_Allocated, Guaranteed_Price, Topup_Value, Selectable, Unit_Price,
+Guarantee_Type). Slots are filled in the order of the funds'
 positions in `ul_funds` keys; empty slots hold zeros and Fund_Index -1.
+
+## Top-up and strategy timing
+
+Top-ups are paid by active policies and buy units across the existing premium
+allocation weights after the separate top-up allocation charge. Any policy
+with a future payment needs allocations summing to 1. Gross top-ups count
+toward the premiums-paid floor and buy additional insured cover at the stated
+multiple. The cover goes into the Type I or Type II benefit calculation and
+continues at its full amount on conversion to paid-up. At valuation, the
+Paid Up Sum Assured field is the base paid-up cover. The top-up history
+supplies its associated cover separately.
+
+Top-up units are tagged through charges, growth and internal switches.
+The latest top-up starts one lock period for the entire top-up balance. For
+an N-month lock, the payment month and the next N−1 months are locked.
+Partial withdrawals are limited to unlocked units. Full exits follow the
+existing benefit timing, with any discontinuance charge funded from the base
+balance.
+
+### Strategy table `ul_strategies`
+
+Use `avk_ul_year_key_v1` with columns `year,key,field,value`. The key is the
+numeric `Fund Strategy` code. Supply consecutive rows from year 1 for every key
+and field. Key 0 has all fields zero. Other keys specify `mode`, `source_slot`,
+`share`, `amount` and `target_1` through `target_5`. An active policy can
+select a strategy. Slot numbers refer to the policy's holdings in sorted
+fund-code order. Destination weights sum to 1, exclude the source, and reference
+selectable held slots. Only `share` can vary by schedule row.
+
+| Mode | Schedule and transfer |
+|---|---|
+| 1 | Lifecycle by attained age. Row 1 is age 0. `share` is the nonincreasing target equity share. |
+| 2 | Lifecycle by years remaining, including the current policy year. Row 1 is the final year. `share` is the target equity share and falls as maturity approaches. |
+| 3 | STP. Transfer the constant positive fraction `share` of the opening source value monthly. |
+| 4 | STP. Transfer the positive `amount` monthly, limited by the opening source value. Use `share = 0`. |
+
+Use zero `amount` in modes 1 through 3. Lifecycle strategies use a majority
+equity source and majority debt targets. The last row applies beyond the
+schedule. The first live step and each policy-year start move the designated
+fund basket toward the target. Other holdings retain their balances. A strategy
+replaces annual auto-rebalancing. Sales and net reinvestment take place before
+premium allocation. The variant's switch charge is limited to gross sales and
+enters general-fund charge income.
+
+## Highest-NAV maturity guarantee
+
+For an enabled variant and a type-1 fund, the engine evolves the monthly NAV
+net of FMC for each basis and scenario path. It starts from the fund universe
+unit price and records the maximum in the window through maturity, seeded
+from the holding's Guaranteed Unit Price. The maturity uplift is the
+shortfall per unit multiplied by the units maturing in the fund. It applies
+to active and paid-up maturity units. The general fund pays the uplift and
+counts it toward any policy-level minimum maturity benefit.
+
+Valuations with an enabled type-1 holding show `benefits_non_unit_highest_nav`
+with the usual basis suffixes. This amount is included in
+`non_unit_benefit_outgo`. A policy maturing at valuation uses its carried
+NAV and peak at step 1. Unit quantities use a positive opening NAV for any
+month in which units are bought, cancelled or switched.
 
 ## Not modelled
 
-Planned later: switching
-behaviour, top-ups, lifecycle and systematic transfer strategies, premium funding
-benefit, highest-NAV guarantee mechanics, settlement options, pension variants, tax
-on charges and reinsurance.
+Planned later: discretionary switching behaviour, premium funding benefit,
+capital-protection guarantees, settlement options, pension variants, tax on
+charges and reinsurance.

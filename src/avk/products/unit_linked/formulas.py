@@ -50,6 +50,11 @@ VARIANT_FEATURES = (
     "disc_ap_threshold",
     "auto_rebalance",
     "riy_additions_on",
+    "topup_on",
+    "topup_sa_multiple",
+    "topup_lock_in_months",
+    "switch_charge",
+    "highest_nav_start_month",
 )
 REGIME_FIELDS = ("dpf_min_rate", "dpf_fmc_max", "caps_apply")
 SLOT_FIELDS = (
@@ -62,6 +67,10 @@ SLOT_FIELDS = (
     *(f"W_{a}" for a in ASSETS),
     "Premiums_Allocated",
     "Guaranteed_Price",
+    "Topup_Value",
+    "Selectable",
+    "Unit_Price",
+    "Guarantee_Type",
 )
 POLICY_FIELDS = (
     "Variant_Id",
@@ -96,6 +105,16 @@ POLICY_FIELDS = (
     "PW_Previous_Year",
     "FV_Sum_Current_Year",
     "Disc_Charge_Paid",
+    "Single_Top_Up_Premium",
+    "Single_Top_Up_Policy_Month",
+    "Regular_Top_Up_Premium",
+    "Top_Up_Premiums_Paid_To_Date",
+    "Last_Top_Up_Policy_Month",
+    "Strategy_Id",
+    "Strategy_Mode",
+    "Strategy_Source_Slot",
+    "Strategy_Amount",
+    *(f"Strategy_Target_{k}" for k in range(1, SLOTS + 1)),
 )
 FIELDS = (
     *POLICY_FIELDS,

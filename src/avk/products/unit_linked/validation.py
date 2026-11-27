@@ -32,8 +32,12 @@ from avk.products.unit_linked.bindings import (
     STATUS_ACTIVE,
     STATUS_DPF,
     STATUS_RPU,
+    STRATEGY_COLUMN,
+    TOPUP_POLICY_FIELDS,
+    TOPUP_UNITS,
     VARIANTS_TABLE,
 )
+from avk.products.unit_linked.strategies import check_strategies
 
 ALLOCATION_TOLERANCE = 1e-9
 WEIGHT_TOLERANCE = 1e-12
@@ -170,6 +174,26 @@ def _bad_numbers(values: pl.DataFrame, columns: tuple[str, ...], table: str) -> 
     return [f"{table}: non-numeric or non-finite value(s) in {bad}"] if bad else []
 
 
+def optional_numbers(
+    frame: pl.DataFrame, columns: tuple[tuple[str, bool], ...], table: str
+) -> list[str]:
+    messages = []
+    for column, integer in columns:
+        if column not in frame.columns:
+            continue
+        values = frame.select(numeric(column))[column]
+        if (
+            frame.schema[column] == pl.Boolean
+            or values.null_count()
+            or not values.is_finite().all()
+            or (values < 0).any()
+            or (integer and ((values != values.floor()) | (values > 2**53 - 1)).any())
+        ):
+            kind = "integer" if integer else "number"
+            messages.append(f"{table}: {column} must be a finite nonnegative {kind}")
+    return messages
+
+
 def months_elapsed(start: pl.Expr, valuation: date) -> pl.Expr:
     """Policy month at the valuation date, as Term's `Duration_in_Months`."""
     return ((valuation.year - start.dt.year()) * 12 + valuation.month - start.dt.month() + 1).cast(
@@ -232,9 +256,15 @@ class UnitLinkedPolicyValidator(PolicyValidator):
             return messages
         values = frame.select(numeric(c) for c in POLICY_NUMBERS)
         messages = _bad_numbers(values, POLICY_NUMBERS, table)
+        messages.extend(
+            optional_numbers(
+                frame, tuple((column, integer) for _, column, integer in TOPUP_POLICY_FIELDS), table
+            )
+        )
         parsed = frame.select(
             dates(c, frame.schema[c]) for c in (*POLICY_DATES, POLICY_LAST_PREMIUM)
         )
+        messages.extend(optional_numbers(frame, ((STRATEGY_COLUMN, True),), table))
         unparsed = [c for c in parsed.columns if parsed[c].null_count()]
         if unparsed:
             messages.append(f"{table}: unparseable date(s) in {unparsed}")
@@ -356,6 +386,7 @@ def holding_messages(
         dates("Fund Entry Date", rows.schema["Fund Entry Date"]),
     )
     messages = _bad_numbers(values, HOLDING_NUMBERS, table)
+    messages.extend(optional_numbers(rows, ((TOPUP_UNITS, False),), table))
     unparsed = [c for c in ("Valuation Date", "Fund Entry Date") if values[c].null_count()]
     if unparsed:
         messages.append(f"{table}: unparseable date(s) in {unparsed}")
@@ -366,6 +397,10 @@ def holding_messages(
     negative = [c for c in HOLDING_NUMBERS if (values[c] < 0).any()]
     if negative:
         messages.append(f"{table}: values must be nonnegative: {negative}")
+    if TOPUP_UNITS in rows.columns:
+        topup = rows.select(numeric(TOPUP_UNITS))[TOPUP_UNITS]
+        if (topup > values["Units"]).any():
+            messages.append(f"{table}: {TOPUP_UNITS} cannot exceed Units")
     if (values["Premium Allocation"] > 1).any():
         messages.append(f"{table}: Premium Allocation must lie in [0, 1]")
     if (values["Fund Entry Date"] > valuation_date).any():
@@ -389,6 +424,14 @@ def holding_messages(
         messages.append(
             f"{table}: Product Code and Valuation Date must equal the policy's in {POLICY_TABLE}"
         )
+    if (
+        TOPUP_UNITS in rows.columns
+        and rows.select("Policy Number", numeric(TOPUP_UNITS))
+        .join(keys, on="Policy Number")
+        .filter((pl.col("status") == STATUS_DPF) & (pl.col(TOPUP_UNITS) != 0))
+        .height
+    ):
+        messages.append(f"{table}: DPF holdings must have zero {TOPUP_UNITS}")
     totals = joined.group_by("Policy Number").agg(
         pl.col("Premium Allocation").sum().alias("allocation"),
         pl.col("Premiums Allocated To Fund").sum().alias("allocated"),
@@ -442,6 +485,7 @@ def check_tables(tables: Mapping[str, Table]) -> list[str]:
         *features.check_rules(funds, features.FUND_FIELDS, FUNDS_TABLE),
         *features.check_rules(variants, features.VARIANT_FIELDS, VARIANTS_TABLE),
         *features.check_rules(caps, features.CAP_FIELDS, CAPS_TABLE),
+        *check_strategies(tables),
     ]
     for logical, rules in (
         (SCALES_TABLE, features.SCALE_FIELDS),
@@ -509,6 +553,11 @@ def _cap_messages(
             )
             if (pac > cap["pac_max"]).any():
                 messages.append(f"{name}: premium_allocation_rate above pac_max")
+            topup = _year_columns(
+                year_table(tables, SCALES_TABLE, "topup_allocation_rate"), variant
+            )
+            if (topup > cap["pac_max"]).any():
+                messages.append(f"{name}: topup_allocation_rate above pac_max")
             first = pac[:5]
             if (first > 0).any() and (
                 first.min() <= 0 or first.max() / first.min() > cap["pac_ratio_max_first5"]
@@ -522,6 +571,7 @@ def _cap_messages(
             for field, limit, above in (
                 ("admin_escalation", "admin_escalation_max", True),
                 ("guarantee_charge", "guarantee_charge_max", True),
+                ("switch_charge", "switch_charge_max", True),
                 ("min_db_premium_multiple", "min_db_premium_multiple", False),
                 ("lock_in_months", "lock_in_months_min", False),
             ):

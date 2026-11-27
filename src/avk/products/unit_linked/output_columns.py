@@ -7,6 +7,8 @@ OPENING_FUNDS = (
 
 BASIS_SUFFIXES = (("reserving", "reserving"), ("be", "BE"), ("mc", "MC"))
 
+HIGHEST_NAV = ("benefits_non_unit_highest_nav", "highest_nav_cost")
+
 UNIT_SEGMENT = (
     ("lives_active", "A_end"),
     ("lives_dpf", "D_end"),

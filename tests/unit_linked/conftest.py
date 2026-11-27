@@ -3,6 +3,7 @@
 from datetime import date
 from pathlib import Path
 
+import numpy as np
 import polars as pl
 import pytest
 
@@ -34,6 +35,7 @@ def load_tables(folder: Path = BASIS) -> dict:
     for logical, rules in (
         ("ul_charge_scales", features.SCALE_FIELDS),
         ("ul_disc_charge_caps", features.DISC_CAP_FIELDS),
+        ("ul_strategies", features.STRATEGY_FIELDS),
     ):
         for rule in rules:
             tables[f"{logical}/{rule.name}"] = load(logical, (rule.name,))
@@ -226,7 +228,14 @@ def ul_projection(projection_inputs):
     assert report.points is not None and report.scenarios is not None
 
     def run(
-        policy=None, *, case=None, scenario_overrides=None, scenarios=None, mc_params=None, **fields
+        policy=None,
+        *,
+        case=None,
+        scenario_overrides=None,
+        scenarios=None,
+        mc_params=None,
+        table_overrides=None,
+        **fields,
     ):
         from dataclasses import replace
 
@@ -238,6 +247,29 @@ def ul_projection(projection_inputs):
             scenarios = replace(scenarios, variables={**scenarios.variables, **scenario_overrides})
         months = next(iter(scenarios.variables.values())).shape[1]
         contexts = report.contexts
+        if table_overrides:
+            contexts = {
+                basis: ctx.model_copy(
+                    update={
+                        "tables": {
+                            name: assumption.model_copy(
+                                update={
+                                    "table": replace(
+                                        assumption.table,
+                                        values=np.full_like(
+                                            assumption.table.values, table_overrides[name]
+                                        ),
+                                    )
+                                }
+                            )
+                            if name in table_overrides
+                            else assumption
+                            for name, assumption in ctx.tables.items()
+                        }
+                    }
+                )
+                for basis, ctx in contexts.items()
+            }
         if mc_params is not None:
             mc = contexts["mc"]
             contexts = {
