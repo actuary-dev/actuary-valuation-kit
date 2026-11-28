@@ -56,8 +56,9 @@ def test_profit_chain_transfers_before_tax(ul_projection):
     np.testing.assert_allclose(be("tax"), tax, rtol=1e-15)
     np.testing.assert_allclose(be("net_profit_before_sm"), pbt - transfer - tax, rtol=1e-12)
     interest = be("interest_on_solvency_capital")
-    coc = be("increase_in_solvency_capital") - interest * (
-        1 - params["Tax Rate"] - params["profit_transfer_rate"]
+    # Interest on capital is profit like any other: transfer first, then tax on the rest.
+    coc = be("increase_in_solvency_capital") - interest * (1 - params["profit_transfer_rate"]) * (
+        1 - params["Tax Rate"]
     )
     np.testing.assert_allclose(be("cost_of_capital"), coc, rtol=1e-12, atol=1e-9)
     np.testing.assert_allclose(

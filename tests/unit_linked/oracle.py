@@ -820,11 +820,8 @@ def project(p: Policy, b: Basis, horizon: int) -> dict[str | None, dict[str, lis
         s["net_profit_before_sm"][t] = pbt - s["profit_transfer"][t] - s["tax"][t]
         interest = be["interest_on_solvency_capital"][t]
         s["cost_of_capital"][t] = (
-            be["increase_in_solvency_capital"][t]
-            - interest
-            + interest * tax
-            + interest * transfer * positive
-        )
+            be["increase_in_solvency_capital"][t] - interest * (1 - transfer) * (1 - tax)
+        ) * positive
         s["net_profit_after_sm"][t] = s["net_profit_before_sm"][t] - s["cost_of_capital"][t]
         s["non_unit_segment_profit"][t] = pbt
         s["total_profit"][t] = be["unit_segment_profit"][t] + pbt

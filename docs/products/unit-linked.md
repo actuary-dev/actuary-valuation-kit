@@ -288,7 +288,7 @@ The profit signature is on the best-estimate basis, as for the other products:
 profit before tax = BE net cashflow - increase in reserves + interest on the reserve
 profit transfer   = profit before tax x profit_transfer_rate
 tax               = (profit before tax - profit transfer) x Tax Rate
-cost of capital   = increase in capital - interest on capital x (1 - Tax Rate - profit_transfer_rate)
+cost of capital   = increase in capital - interest on capital x (1 - profit_transfer_rate) x (1 - Tax Rate)
 ```
 
 The BE net cashflow is the general fund's net cashflow, income positive. The reserve
@@ -298,9 +298,15 @@ Interest on it is at ROI.
 The unit segment's profit, computed on every basis, is the allocated premium, the
 additions and the investment return credited to the units (including the DPF credit),
 less the charges, unit-funded benefits and withdrawals taken from them, less the
-increase in the unit reserve. It is nil every month. The insurer's profit arises
-entirely in the non-unit segment: `non_unit_segment_profit` is the profit before tax,
-and `total_profit` adds the two.
+increase in the unit reserve. It is nil every month, so all of the insurer's profit
+emerges in the general fund: `non_unit_segment_profit` is the profit before tax, and
+`total_profit` adds the two.
+
+The interest on capital in the cost of capital is treated like any other profit: the
+profit transfer comes off first and tax is charged on the rest. (The shared
+`ProfitSignature` of the other products charges tax on the interest before the transfer,
+which overstates the leakage by Tax Rate x profit_transfer_rate of that interest; it is
+left unchanged so their saved results do not move.)
 
 ## Solvency capital
 
@@ -311,8 +317,14 @@ reserve held for basis b's lives. The sum-at-risk part stops in the month of mat
 Variants with a maturity guarantee (`gmmb_on` 1) use
 `reserve_capital_factor_guarantee` and `sar_capital_factor_guarantee`; the others use
 the `_no_guarantee` factors. Capital is zero at the valuation instant and earns interest
-at the basis's general fund rate. The demo factors are illustrative inputs, not
-verified regulatory values.
+at the basis's general fund rate.
+
+The demo uses the required solvency margin factors that IRDAI has long published for
+linked life business: 0.8% of mathematical reserves and 0.2% of the sum at risk without
+an investment guarantee, 1.8% and 0.2% with one, and a target of 150% (the control level
+of solvency). Linked pension and annuity business takes 0% on the sum at risk. Confirm
+the factors against the regulation and master circular in force before using them; no
+reinsurance credit is modelled.
 
 ## Market-consistent embedded value
 
@@ -361,11 +373,24 @@ entry per policy and month. The generated
 The test suite holds the model specification's verification checks on a 1,000-policy
 demo book: lives exhaust across the three states, the unit funds reconcile every
 month, charge income equals the charges taken from the units item by item, the sum at
-risk is never negative and is nil above the floors, there is no mortality charge
-without a sum at risk, the backward recursion equals discounted summation, the floors
-hold, the reserve roll-forward ties, the DPF never credits below its guaranteed rate,
-the funds are nil after maturity, the unit segment profit is nil and the mc funds grow
-at the risk-free rate.
+risk stays at or above zero and vanishes once the fund covers the death benefit floors,
+there is no mortality charge without a sum at risk, the backward recursion equals
+discounted summation, the floors hold, the reserve roll-forward ties, the reserving
+reserve is at least the best-estimate liability, the DPF never credits below its
+guaranteed rate, the funds are nil after maturity, the unit segment profit is nil and
+the mc funds grow at the risk-free rate.
+
+The reserving check compares the held reserve with the best-estimate basis's unit
+reserve plus its unfloored general fund DCF, on the same real-world economics, so that
+only the margins differ. The margins do not push every policy the same way. The +20%
+lapse margin is adverse for most policies but favourable for one that refunds its
+allocation charges at maturity, because a lapse forfeits the refund. On the demo book
+one such policy, seven months from maturity, is INR 2.85 below its best-estimate
+liability, within the money tolerance. The reserving reserve is not compared with the mc
+BEL: the reserving basis takes credit for real-world fund growth less 0.5%, while the
+mc basis grows funds at the risk-free rate. On the demo book 29 of 1,000 policies, mostly
+return-of-charge variants, sit a combined INR 58,608 below their mc BEL. The suite
+reports this but does not assert it.
 
 The check that the reserving reserve is at least the BEL fails for some demo
 policies. On the demo basis, 29 of 1,000 policies fail it, all of them

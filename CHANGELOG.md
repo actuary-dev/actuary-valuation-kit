@@ -23,6 +23,10 @@
   signature has unit and non-unit segments. Solvency capital and MCEV (PVFP,
   frictional cost, CRNHR, VIF, BEL) complete the valuation. Add the final
   UNIT_LINKED output schema and saved 10,000-policy valuation results.
+  The demo capital factors are IRDAI's linked-life values: 0.8% of reserves and 0.2%
+  of the sum at risk without an investment guarantee, and 1.8% and 0.2% with one. The
+  UNIT_LINKED cost of capital nets the interest on capital of the profit transfer and
+  then tax. The reserving-adequacy check compares with the best-estimate liability.
 - `python -m avk.testing.demo --products` captures saved results for chosen products.
 - Let a product factory name companion policy tables that the run reads once,
   validates and gives to the model-point adapter; existing products declare none.

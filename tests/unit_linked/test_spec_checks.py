@@ -234,40 +234,51 @@ def test_check_08_reserve_roll_forward_ties(book):
     )
 
 
-def reserve_margin(book):
-    """Reserving total reserve less the BEL at the valuation date, per policy."""
-    reserving, mc = book[0]["reserving"], book[0]["mc"]
-    return reserving["total_reserve"][:, 0] - mc["bel"][:, 0]
+def best_estimate_liability(book):
+    """The best-estimate liability at the valuation date, per policy: the unit reserve plus
+    the best-estimate basis's general fund DCF, with no statutory floors. The model
+    specification's check 9 compares the reserving reserve with this liability, on the
+    same real-world economics, so that only the margins for adverse deviation differ."""
+    be = book[0]["be"]
+    return be["unit_reserve"][:, 0] + be["gf_reserve_dcf"][:, 0]
 
 
-def test_check_09_margin_reported_per_case(book, capsys):
-    margin = reserve_margin(book)
+def money_allowance(expected):
+    """The CLAUDE.md money rule for a single value: 1e-6 relative, floor 1e-5."""
+    return np.maximum(1e-5, 1e-6 * np.abs(expected))
+
+
+def test_check_09_reserving_reserve_at_least_the_best_estimate_liability(book):
+    """The margins need not all point the same way for every policy, so the direction is
+    tested rather than assumed. On the demo book one return-of-allocation-charge policy
+    seven months from maturity sits INR 2.85 below its best-estimate liability (4e-7
+    relative): higher lapses forfeit the refund, offsetting the other margins. That is
+    within the money tolerance; anything larger fails."""
+    expected = best_estimate_liability(book)
+    held = book[0]["reserving"]["total_reserve"][:, 0]
+    assert (held >= expected - money_allowance(expected)).all()
+    dcf_reserving = book[0]["reserving"]["gf_reserve_dcf"][:, 0]
+    dcf_be = book[0]["be"]["gf_reserve_dcf"][:, 0]
+    assert (dcf_reserving >= dcf_be - money_allowance(expected)).all()
+
+
+def test_check_09_market_consistent_comparison_reported(book, capsys):
+    """Not a check of the specification: the reserving basis takes credit for real-world
+    fund growth less its margin, while the mc BEL grows funds at the risk-free rate, so the
+    statutory reserve can sit below the mc BEL where future charges matter most. Reported
+    per variant for the maintainer."""
+    margin = book[0]["reserving"]["total_reserve"][:, 0] - book[0]["mc"]["bel"][:, 0]
     variants = book[1].points.frame["Variant_Id"].to_numpy()
     with capsys.disabled():
-        q = np.quantile(margin, [0, 0.05, 0.5, 0.95, 1])
         print()
-        print(f"check 9: reserving total reserve less BEL at step 0, quantiles {q}")
+        print(
+            f"reserving reserve less mc BEL at step 0: {(margin < 0).sum()} below, "
+            f"total shortfall {margin[margin < 0].sum():.2f}"
+        )
         for variant in np.unique(variants):
             chosen = margin[variants == variant]
-            print(
-                f"  variant {variant}: {chosen.size} policies, {(chosen < 0).sum()} below, "
-                f"min {chosen.min():.2f}"
-            )
+            print(f"  variant {variant}: {chosen.size} policies, {(chosen < 0).sum()} below")
     assert np.isfinite(margin).all()
-
-
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "Demo basis: the reserving basis grows funds at the real-world return less 0.5% "
-        "while the mc basis grows them at the risk-free rate, so for return-of-charges "
-        "variants with a positive general fund reserve the reserving reserve takes credit "
-        "for FMC income the BEL does not (29 of 1,000 policies). A wider fund return margin "
-        "reduces the breaches; the calibration is the maintainer's call (ul-p2b-log.md)."
-    ),
-)
-def test_check_09_reserving_reserve_at_least_the_bel(book):
-    assert (reserve_margin(book) >= 0).all()
 
 
 @pytest.mark.parametrize("basis", BASES)

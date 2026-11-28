@@ -124,16 +124,14 @@ class UnitLinkedProfit(UnitLinkedProfitRates):
         return self.profit_before_tax(t) - self.profit_transfer(t) - self.tax(t)
 
     def cost_of_capital(self, t):
-        """Best-estimate capital increase less its interest, plus the tax and profit
-        transfer on that interest."""
+        """Best-estimate capital increase less its interest net of the profit transfer
+        and of tax on what remains, as the profit chain treats any other profit."""
         return (
             at_basis("be", self.increase_in_solvency_capital)(t)
             - at_basis("be", self.interest_on_solvency_capital)(t)
-            + at_basis("be", self.interest_on_solvency_capital)(t) * self.tax_rate
-            + at_basis("be", self.interest_on_solvency_capital)(t)
-            * self.profit_transfer_rate
-            * (t > 0)
-        )
+            * (1 - self.profit_transfer_rate)
+            * (1 - self.tax_rate)
+        ) * (t > 0)
 
     def net_profit_after_sm(self, t):
         """Profit after the cost of holding solvency capital."""

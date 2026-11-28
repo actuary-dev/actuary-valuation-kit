@@ -8,8 +8,8 @@ variant B (`pv(t) = cf(t) + pv(t + 1) / (1 + i(t))`). Each present value is repo
 end of month `t`.
 
 - PVFP: the profit chain at the reference rate.
-- Frictional cost: the tax and profit-transfer leakage on the interest earned by required
-  capital (not the capital lock-up itself).
+- Frictional cost: what tax and the profit transfer take from the investment income on
+  required capital. Holding the capital is not itself charged here.
 - Cost of residual non-hedgeable risk: a cost-of-capital charge on required capital.
 - VIF = PVFP - frictional cost - CRNHR.
 - BEL: the unit reserve plus the present value of the general fund's net outgo.

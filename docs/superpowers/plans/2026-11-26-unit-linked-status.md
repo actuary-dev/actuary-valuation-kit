@@ -156,3 +156,38 @@ merged, blocked.
   6. P5 in Codex from plan `2026-11-27-ul-p5-ifrs17-stress.md`, then P6b.
   Maintainer items from P2b: check 9 (reserving `fund_return_margin`, 29 of 1,000 demo
   policies breach at -0.5%); the demo capital factors are unverified.
+- 2026-11-28 Maintainer asked for a methodology review, a ruling on check 9, adjusted
+  goldens and validated capital factors. Steps 1 and 2 are done: the combined P2b + P3
+  checks passed with 371 tests, and the two phrases are reworded. Findings and fixes:
+  1. Check 9 used the wrong comparator. The model specification compares the reserving
+     reserve with the best-estimate liability (BE unit reserve plus the BE general fund
+     DCF, on the same real-world economics). The test compared with the mc BEL (risk-free
+     growth). Against the BE liability, 1 of 1,000 policies is short, by INR 2.85 on INR
+     6.42m (4e-7 relative): a return-of-allocation-charge policy seven months from
+     maturity, where the upward lapse margin is favourable because a lapse forfeits the
+     refund. That is within the money tolerance. The mc comparison (29 policies, INR 58,608
+     in total) is reported, not asserted. It follows from the specification's reserving
+     basis, which takes credit for real-world growth less 0.5%. Ruling: no
+     `fund_return_margin` change; the strict xfail is removed.
+  2. Demo capital factors were wrong. Two independent sources (an IAIS 2009 India solvency
+     presentation and a 2018 broker report) give IRDAI linked life as 0.8% of reserves and
+     0.2% of sum at risk without guarantee, and 1.8% and 0.2% with guarantee; pension and
+     annuity take 0% on sum at risk; the target is 150%. The demo had 0.6%/0% and 2.0%/0.2%.
+     Fixed in `src/avk/demo/unit_linked.py` and `examples/demo/basis/product_parameters.csv`.
+  3. The UL cost of capital charged tax on the interest on capital before the profit
+     transfer (copied from the shared `ProfitSignature`). Fixed to the specification:
+     interest x (1 - transfer) x (1 - tax). The shared version in the other five products
+     keeps the same imprecision and is left alone so their saved results do not move.
+     Flagged for the maintainer.
+  UL goldens regenerated: 14 of 210 columns changed, all capital, cost of capital, FCC,
+  CRNHR or VIF. At step 0, BE part 1 went from 271.0m to 309.5m, part 2 from 3.5m to 27.9m,
+  MC CRNHR from 51.4m to 61.2m, FCC from 12.5m to 14.8m, and VIF from 1,010.4m to 998.3m.
+  The other 170 saved files and the manifest are unchanged.
+  Noted, not changed:
+  - Capital is nil at the valuation instant (the shared AVK convention), so the first
+    month's frictional cost on valuation-date capital is omitted.
+  - Under stochastic paths the reserving basis follows each path's returns.
+  - Highest-NAV funds (P6a) should count as guaranteed for the capital factors
+    (integration pass).
+  - A pension variant (P6b) needs 0% on sum at risk.
+  - Speed: 10k valuation 68 s, 100k 379 s.
