@@ -209,3 +209,21 @@ merged, blocked.
   `.tmp/p5-slow` or `.tmp/p5-all` is invalid. Before merging P5, the orchestrator re-runs
   its demo-suite, slow and full checks itself. Left running: P5's StressCapital test,
   the integration pass's final `pytest` and `pytest -m slow`, and both Codex processes.
+- 2026-11-29 P5 Codex finished partly (WIP committed in the clone as 1a07978, not merged).
+  Done: equity shock, StressCapital sources and presets, VFA settings, in-force
+  measurement, scalar oracles; 32 focused tests pass. It stopped at the VFA identity
+  (IFRS BEL = mc unit reserve + `gf_bel`; largest gap INR 46,218), which exposed two
+  engine timing defects:
+  1. Additions are credited to the units before growth (as the specification orders it),
+     but P2b's general fund paid them at month end, so their first month of growth had no
+     funding. Fix: additions, and residual additions, become a start-of-month
+     general-fund outgo inside `interest_earning_cashflow`.
+  2. Policies whose term ends in the valuation month settle at step 1 from step-0
+     balances with no return, but are paid at month end. Fix: the funds (slots, paid-up
+     and DPF) earn the basis's return less FMC in the settlement month; still no premium,
+     other charges, decrements or additions.
+  Both change UL valuation results; the goldens will be regenerated and the moves
+  documented. Not run: the full default and slow suites (the stale runs were stopped,
+  and the slow TERM roll-forward hit a memory error); the capital kernel's native
+  compile took over 20 minutes. Plan: merge the integration pass, apply both fixes on
+  feature/unit-linked, then merge that into the P5 branch and resume P5.
