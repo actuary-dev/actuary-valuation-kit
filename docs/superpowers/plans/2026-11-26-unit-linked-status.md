@@ -52,10 +52,10 @@ Environment facts learned:
 | P2a unit engine | merged | ul/p2a-unit-engine | `C:\avkwt\p2a` (full clone) | Codex gpt-6.2-sol, effort high, prompts `C:\avkwt\prompts\p2a.md`, then `p2a-fix.md` | 7e9e045 (merge 881f4f0) | log `docs/superpowers/plans/ul-p2a-log.md` |
 | P2b general fund and results | merged | claude/nostalgic-shannon-5d7738 | app worktree | Claude session `local_32b69ad7-2b4c-43cc-b350-eb0c78dfe618`, Opus 5.5 medium | acb486a (merge 2f9cbe4; fixes affdaf6) | methodology review 2026-11-28 |
 | P3 compliance (RIY, illustration) | merged; general-fund wiring of residual additions waits for P2b | claude/ul-p3-compliance-c1cbcb | app worktree | Claude session `local_9a05dfb5-71ef-4db0-9ce3-440ffd29d952`, Sonnet 5.5 high | cafa52a (merge 1c3e888) | plan `2026-11-27-ul-p3-compliance.md`; log `ul-p3-log.md` |
-| P4b stochastic results, part 1 | merged | ul/p4b-stochastic | `C:vkwt\p4b` (full clone) | Codex gpt-6.2-sol | dd12ceb | TVOG wiring in the integration pass |
-| P5 IFRS 17 VFA and stress capital | running | ul/p5-ifrs17 | `C:vkwt\p5` (full clone) | Codex gpt-6.2-sol, prompt `C:vkwt\prompts\p5.md` | — | plan `2026-11-27-ul-p5-ifrs17-stress.md` |
-| P6a top-ups, fund strategies, highest NAV | merged | ul/p6a-unit-features | `C:vkwt\p6a` (full clone) | Codex gpt-6.2-sol | 9fcd327 (merge 950f637) | switch charges integrated |
-| Integration pass | running | ul/integration | `C:vkwt\integ` (full clone) | Codex gpt-6.2-sol, prompt `C:vkwt\prompts\integ.md` | — | residual additions, highest-NAV capital, TVOG wiring, illustration limits |
+| P4b stochastic results, part 1 | merged | ul/p4b-stochastic | `C:\avkwt\p4b` (full clone) | Codex gpt-6.2-sol | dd12ceb | TVOG wiring in the integration pass |
+| P5 IFRS 17 VFA and stress capital | running | ul/p5-ifrs17 | `C:\avkwt\p5` (full clone) | Codex gpt-6.2-sol, prompt `C:\avkwt\prompts\p5.md` | — | plan `2026-11-27-ul-p5-ifrs17-stress.md` |
+| P6a top-ups, fund strategies, highest NAV | merged | ul/p6a-unit-features | `C:\avkwt\p6a` (full clone) | Codex gpt-6.2-sol | 9fcd327 (merge 950f637) | switch charges integrated |
+| Integration pass | running | ul/integration | `C:\avkwt\integ` (full clone) | Codex gpt-6.2-sol, prompt `C:\avkwt\prompts\integ.md` | — | residual additions, highest-NAV capital, TVOG wiring, illustration limits |
 | P6b premium funding, settlement, pension | plan merged (3f0f164); build after P2b, P5 and P6a | — | — | — | — | plan `2026-11-27-ul-p6b-features.md` (9 tasks); GST and reinsurance excluded (design call 10) |
 
 Status values: not started, running, stopped (usage limit or error), in review,
