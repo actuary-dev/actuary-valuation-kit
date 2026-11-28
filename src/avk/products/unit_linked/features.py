@@ -7,7 +7,7 @@ from typing import Literal
 import numpy as np
 import polars as pl
 
-from avk.products.unit_linked.bindings import ASSET_CLASSES
+from avk.products.unit_linked.bindings import ASSET_CLASSES, MAX_FUND_SLOTS
 
 Kind = Literal["flag", "code", "int", "rate", "amount", "multiple"]
 FLAG = frozenset({0.0, 1.0})
@@ -111,6 +111,19 @@ VARIANT_FIELDS = (
     ),
     flag("auto_rebalance", "1 funds are rebalanced to the premium allocation at each anniversary"),
     flag("riy_additions_on", "1 reduction-in-yield residual additions (read from phase P3)"),
+    flag("topup_on", "1 permits top-up premiums and associated cover and units"),
+    multiple("topup_sa_multiple", "Additional cover as a multiple of gross top-up premiums"),
+    integer("topup_lock_in_months", 0, "Top-up partial withdrawal lock from most recent payment"),
+    amount("switch_charge", "Charge per month in which a strategy switches units"),
+    integer("highest_nav_start_month", 0, "First policy month of the highest-NAV window; 0 off"),
+)
+
+STRATEGY_FIELDS = (
+    code("mode", (0, 1, 2, 3, 4), "None, lifecycle age/remaining years, STP share/amount"),
+    FieldRule("source_slot", "int", None, 0, MAX_FUND_SLOTS, False),
+    rate("share", "Lifecycle equity target share or the STP share of the source"),
+    amount("amount", "Fixed STP amount; zero for other modes"),
+    *(rate(f"target_{k}", f"Destination weight of slot {k}") for k in range(1, MAX_FUND_SLOTS + 1)),
 )
 
 FUND_FIELDS = (
@@ -194,6 +207,7 @@ DISC_CAP_FIELDS = (
 
 SCALE_FIELDS = (
     rate("premium_allocation_rate", "Premium allocation charge, a fraction of each premium"),
+    rate("topup_allocation_rate", "Allocation charge, a fraction of each gross top-up"),
     amount("admin_charge_monthly", "Monthly administration charge before escalation"),
     rate("loyalty_rate", "Loyalty addition rate at the end of the policy year"),
     rate("booster_rate", "Booster addition rate at the end of the policy year"),

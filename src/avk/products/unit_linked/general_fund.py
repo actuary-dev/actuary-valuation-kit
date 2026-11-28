@@ -26,6 +26,7 @@ class GeneralFundCashflows(GeneralFundInterest):
         "non_unit_benefit_outgo",
         "pac_income",
         "rpu_fmc_total",
+        "switch_charge_income",
     )
 
     def residual_additions(self, t):
@@ -34,8 +35,15 @@ class GeneralFundCashflows(GeneralFundInterest):
 
     def charges_start(self, t):
         """Charges deducted at the start of the month: allocation, administration,
-        mortality and guarantee charges, active and paid-up."""
-        return self.pac_income(t) + self.admin_income(t) + self.mc_income(t) + self.gc_income(t)
+        mortality and guarantee charges, active and paid-up, and switch charges on
+        strategy sales."""
+        return (
+            self.pac_income(t)
+            + self.admin_income(t)
+            + self.mc_income(t)
+            + self.gc_income(t)
+            + self.switch_charge_income(t)
+        )
 
     def charges_end(self, t):
         """Charges taken at the end of the month: fund management charges on every state

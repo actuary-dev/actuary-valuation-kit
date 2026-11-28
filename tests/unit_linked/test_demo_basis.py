@@ -22,6 +22,7 @@ UL_FILES = {
     "ul_charge_scales.csv",
     "ul_disc_charge_caps.csv",
     "ul_riy_caps.csv",
+    "ul_strategies.csv",
     "mortality_charges_ul.csv",
     "lapse_rates_ul.csv",
     "partial_withdrawals_ul.csv",
@@ -69,6 +70,7 @@ def test_every_table_reads_and_obeys_its_rules(folder):
         ("ul_charge_scales", features.SCALE_FIELDS),
         ("ul_disc_charge_caps", features.DISC_CAP_FIELDS),
         ("ul_riy_caps", features.RIY_FIELDS),
+        ("ul_strategies", features.STRATEGY_FIELDS),
     ):
         frame = pl.DataFrame({r.name: load(folder, name, (r.name,)).values.ravel() for r in rules})
         assert features.check_rules(frame, rules, name) == []

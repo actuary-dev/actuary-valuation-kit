@@ -9,6 +9,7 @@ class DiscontinuedFund(Component):
 
     REQUIRES = (
         "fund_close_total",
+        "topup_close_total",
         "fund_return_factor",
         "live",
         "lock_in",
@@ -44,7 +45,7 @@ class DiscontinuedFund(Component):
         return (
             min(
                 self.disc_pct(t) * self.policy.Annualised_Premium,
-                self.fund_close_total(t),
+                max(self.fund_close_total(t) - self.topup_close_total(t), 0),
                 self.disc_cap(t),
             )
             * self.lock_in(t)

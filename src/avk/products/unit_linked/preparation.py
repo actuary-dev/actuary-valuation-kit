@@ -15,10 +15,15 @@ from avk.products.unit_linked.bindings import (
     HOLDINGS_TABLE,
     MAX_FUND_SLOTS,
     SMOKER_CODES,
+    STRATEGY_COLUMN,
+    TOPUP_POLICY_FIELDS,
+    TOPUP_UNITS,
     VARIANTS_TABLE,
 )
 from avk.products.unit_linked.formulas import FIELDS, REGIME_FIELDS, SLOT_FIELDS, VARIANT_FEATURES
+from avk.products.unit_linked.strategies import prepare_strategies, strategy_policy_messages
 from avk.products.unit_linked.validation import (
+    ALLOCATION_TOLERANCE,
     check_policies_against_tables,
     check_tables,
     keyed_frames,
@@ -53,7 +58,7 @@ POLICY_FIELDS = (
 )
 WEIGHTS = tuple(f"W_{a}" for a in ASSET_CLASSES)
 PREPARED_FIELDS = FIELDS  # the model-point contract, spelled in formulas.py
-INTEGER_SLOT_FIELDS = ("Present", "Fund_Index")
+INTEGER_SLOT_FIELDS = ("Present", "Fund_Index", "Selectable", "Guarantee_Type")
 KEY = "_policy_key"
 RUN_TYPES = ("Valuation",)
 
@@ -117,6 +122,14 @@ class UnitLinkedModelPointAdapter(ModelPointAdapter):
         prepared = self._policy_fields(frame, codes, keyed, config)
         prepared = self._dpf_fields(prepared, holdings, funds)
         prepared = self._slot_fields(prepared, holdings, funds)
+        prepared = prepare_strategies(prepared, self.tables)
+        messages = (
+            topup_messages(prepared, frame, holdings)
+            + strategy_policy_messages(prepared)
+            + highest_nav_messages(prepared)
+        )
+        if messages:
+            raise InputError("\n".join(messages))
         return ModelPoints(prepared.drop(KEY), self.fields)
 
     def _policy_fields(
@@ -134,6 +147,15 @@ class UnitLinkedModelPointAdapter(ModelPointAdapter):
                 (numeric(column).cast(pl.Int64) if integer else numeric(column)).alias(name)
                 for name, column, integer in POLICY_FIELDS
             ),
+            *(
+                (numeric(column) if column in frame.columns else pl.lit(0.0))
+                .cast(pl.Int64 if integer else pl.Float64)
+                .alias(name)
+                for name, column, integer in TOPUP_POLICY_FIELDS
+            ),
+            (numeric(STRATEGY_COLUMN) if STRATEGY_COLUMN in frame.columns else pl.lit(0))
+            .cast(pl.Int64)
+            .alias("Strategy_Id"),
             pl.col("Policy Number").alias("Policy_Number"),
             codes,
             months_elapsed(start, config.valuation_date).alias("Duration_in_Months"),
@@ -199,9 +221,11 @@ class UnitLinkedModelPointAdapter(ModelPointAdapter):
         attributes = funds.filter(pl.col("is_dpf") == 0).select(
             pl.col("key").alias("Fund Code"),
             "Fund_Index",
-            "unit_price",
+            pl.col("unit_price").alias("Unit_Price"),
+            pl.col("guarantee_type").alias("Guarantee_Type"),
             pl.col("fmc").alias("FMC"),
             pl.col("alpha").alias("Alpha"),
+            pl.col("selectable").alias("Selectable"),
             *(pl.col(f"w_{a}").alias(f"W_{a}") for a in ASSET_CLASSES),
         )
         held = (
@@ -212,9 +236,14 @@ class UnitLinkedModelPointAdapter(ModelPointAdapter):
                 (pl.col(KEY).cum_count().over(KEY)).alias("_slot"),
                 pl.lit(1, dtype=pl.Int64).alias("Present"),
                 numeric("Premium Allocation").alias("Allocation"),
-                (numeric("Units") * pl.col("unit_price")).alias("Value"),
+                (numeric("Units") * pl.col("Unit_Price")).alias("Value"),
                 numeric("Premiums Allocated To Fund").alias("Premiums_Allocated"),
                 numeric("Guaranteed Unit Price").alias("Guaranteed_Price"),
+                (
+                    numeric(TOPUP_UNITS) * pl.col("Unit_Price")
+                    if TOPUP_UNITS in holdings.columns
+                    else pl.lit(0.0)
+                ).alias("Topup_Value"),
             )
         )
         for k in range(1, MAX_FUND_SLOTS + 1):  # over slots, never policies
@@ -234,3 +263,96 @@ class UnitLinkedModelPointAdapter(ModelPointAdapter):
             for k in range(1, MAX_FUND_SLOTS + 1)
             for name in SLOT_FIELDS
         )
+
+
+def topup_messages(
+    prepared: pl.DataFrame, policies: pl.DataFrame, holdings: pl.DataFrame
+) -> list[str]:
+    enabled = prepared.filter(pl.col("V_topup_on") == 1)
+    columns = [column for _, column, _ in TOPUP_POLICY_FIELDS if column not in policies.columns]
+    if enabled.height and (columns or TOPUP_UNITS not in holdings.columns):
+        return [
+            f"UNIT_LINKED: topup_on requires policy columns "
+            f"{[column for _, column, _ in TOPUP_POLICY_FIELDS]} and holding column {TOPUP_UNITS}"
+        ]
+    topup_value = pl.sum_horizontal(f"Fund_{k}_Topup_Value" for k in range(1, MAX_FUND_SLOTS + 1))
+    if prepared.filter(
+        (pl.col("V_topup_on") == 0)
+        & pl.any_horizontal(
+            *(pl.col(name) != 0 for name, _, _ in TOPUP_POLICY_FIELDS), topup_value != 0
+        )
+    ).height:
+        return ["UNIT_LINKED: nonzero top-up inputs require topup_on"]
+    if enabled.is_empty():
+        return []
+    messages = []
+    single = pl.col("Single_Top_Up_Premium") > 0
+    month = pl.col("Single_Top_Up_Policy_Month")
+    duration = pl.col("Duration_in_Months")
+    term = pl.col("Policy_Term") * 12
+    ppt = pl.col("Premium_Payment_Term") * 12
+    interval = 12 // pl.col("Premium_Frequency").clip(lower_bound=1)
+    next_due = duration + 1 + (-duration % interval)
+    regular = pl.col("Regular_Top_Up_Premium") > 0
+    paid = pl.col("Top_Up_Premiums_Paid_To_Date")
+    last = pl.col("Last_Top_Up_Policy_Month")
+    allocation = pl.sum_horizontal(f"Fund_{k}_Allocation" for k in range(1, MAX_FUND_SLOTS + 1))
+    checks = (
+        (
+            (single != (month > 0)) | (single & ((month <= duration) | (month > term))),
+            "a positive Single Top-Up Premium needs a future "
+            "Single Top-Up Policy Month within term",
+        ),
+        (
+            regular & ((pl.col("Premium_Frequency") == 0) | (next_due > ppt)),
+            "Regular Top-Up Premium requires a future regular premium due month",
+        ),
+        (
+            (single | regular) & (pl.col("Policy_Status") != 0),
+            "future top-ups require active Policy Status 0",
+        ),
+        (
+            (paid > pl.col("Premiums_Paid_To_Date"))
+            | ((paid > 0) != (last > 0))
+            | (last > duration)
+            | ((topup_value > 0) & (paid == 0)),
+            "inconsistent top-up premium or unit history and Last Top-Up Policy Month",
+        ),
+        (
+            (single | regular) & ((allocation - 1).abs() > ALLOCATION_TOLERANCE),
+            "allocations of a policy with future top-ups must sum to 1",
+        ),
+        (
+            (single | regular | (paid > 0)) & (pl.col("V_topup_sa_multiple") <= 0),
+            "top-up premiums require positive topup_sa_multiple",
+        ),
+    )
+    for condition, message in checks:
+        if enabled.filter(condition).height:
+            messages.append(f"UNIT_LINKED: {message}")
+    return messages
+
+
+def highest_nav_messages(prepared: pl.DataFrame) -> list[str]:
+    start = pl.col("V_highest_nav_start_month")
+    enabled = prepared.filter(start > 0)
+    if enabled.is_empty():
+        return []
+    during = pl.col("Duration_in_Months") >= start
+    guaranteed = []
+    bad_seed = []
+    for k in range(1, MAX_FUND_SLOTS + 1):
+        slot = pl.col(f"Fund_{k}_Guarantee_Type") == 1
+        guaranteed.append(slot)
+        seed = pl.col(f"Fund_{k}_Guaranteed_Price")
+        nav = pl.col(f"Fund_{k}_Unit_Price")
+        bad_seed.append(slot & ((during & (seed < nav)) | (~during & (seed != 0))))
+    messages = []
+    if enabled.filter(pl.any_horizontal(guaranteed) & (start > pl.col("Policy_Term") * 12)).height:
+        messages.append("UNIT_LINKED: highest_nav_start_month cannot follow maturity")
+    if enabled.filter(pl.any_horizontal(bad_seed)).height:
+        messages.append(
+            f"{HOLDINGS_TABLE}: Guaranteed Unit Price must be at least current NAV inside "
+            "the highest-NAV window and zero before it"
+        )
+    return messages

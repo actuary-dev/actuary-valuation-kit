@@ -20,9 +20,11 @@ class ActiveCashflows(Component):
         "policy_year",
         "premium_due",
         "pw_rate",
+        "withdrawable_total",
         "year_start",
     )
     premium_allocation_rate = year_table("ul_charge_scales/premium_allocation_rate", "Variant_Id")
+    topup_allocation_rate = year_table("ul_charge_scales/topup_allocation_rate", "Variant_Id")
     admin_charge_monthly = year_table("ul_charge_scales/admin_charge_monthly", "Variant_Id")
     loyalty_rate = year_table("ul_charge_scales/loyalty_rate", "Variant_Id")
     booster_rate = year_table("ul_charge_scales/booster_rate", "Variant_Id")
@@ -40,22 +42,70 @@ class ActiveCashflows(Component):
 
     def premium_income(self, t):
         """Expected premiums from opening active lives."""
-        return self.premium_pp(t) * self.A_begin(t)
+        return (self.premium_pp(t) + self.topup_pp(t)) * self.A_begin(t)
+
+    def topup_pp(self, t):
+        """Total gross scheduled and regular top-ups per active life."""
+        return if_(
+            self.policy.V_topup_on and self.live(t) and self.A_begin(t) > 0,
+            self.policy.Single_Top_Up_Premium
+            * (self.policy_month(t) == self.policy.Single_Top_Up_Policy_Month)
+            + self.policy.Regular_Top_Up_Premium * self.premium_due(t),
+            0,
+        )
+
+    def topup_pac_pp(self, t):
+        """Allocation charge on gross top-ups using their own scale."""
+        return (
+            self.topup_pp(t)
+            * self.topup_allocation_rate[self.policy_year(t), self.policy.Variant_Id]
+        )
+
+    def allocated_topup_pp(self, t):
+        """Top-up premium invested in the funds."""
+        return self.topup_pp(t) - self.topup_pac_pp(t)
+
+    def topup_paid_pp(self, t):
+        """Gross top-up premium history per active life, including this month."""
+        return prev(self.topup_paid_pp, self.policy.Top_Up_Premiums_Paid_To_Date) + self.topup_pp(t)
+
+    def topup_sa_pp(self, t):
+        """Cover bought with the accumulated gross top-ups."""
+        return self.policy.V_topup_on * self.policy.V_topup_sa_multiple * self.topup_paid_pp(t)
+
+    def topup_last_month(self, t):
+        """Most recent policy month with a positive top-up."""
+        return if_(
+            self.topup_pp(t) > 0,
+            self.policy_month(t),
+            prev(self.topup_last_month, self.policy.Last_Top_Up_Policy_Month),
+        )
+
+    def topup_lock_active(self, t):
+        """Whether the top-up units are currently ineligible for partial withdrawal."""
+        return (
+            self.policy.V_topup_on
+            and self.topup_last_month(t) > 0
+            and self.policy_month(t) - self.topup_last_month(t) < self.policy.V_topup_lock_in_months
+        )
 
     def pac_pp(self, t):
         """Allocation charge per active life."""
-        return (
-            self.premium_pp(t)
-            * self.premium_allocation_rate[self.policy_year(t), self.policy.Variant_Id]
-        )
+        return self.premium_pp(t) * self.premium_allocation_rate[
+            self.policy_year(t), self.policy.Variant_Id
+        ] + self.topup_pac_pp(t)
 
     def allocated_pp(self, t):
         """Premium credited to the funds."""
-        return self.premium_pp(t) - self.pac_pp(t)
+        return self.premium_pp(t) + self.topup_pp(t) - self.pac_pp(t)
 
     def tpp_pp(self, t):
         """Cumulative premiums, including this month's payment."""
-        return prev(self.tpp_pp, self.policy.Premiums_Paid_To_Date) + self.premium_pp(t)
+        return (
+            prev(self.tpp_pp, self.policy.Premiums_Paid_To_Date)
+            + self.premium_pp(t)
+            + self.topup_pp(t)
+        )
 
     def instalments_pp(self, t):
         """Cumulative instalments paid by the active life."""
@@ -86,7 +136,7 @@ class ActiveCashflows(Component):
             - self.policy.V_pw_reduces_sa
             * (self.pw_this_year_open_pp(t) + self.pw_last_year_pp(t)),
             0,
-        )
+        ) + self.topup_sa_pp(t)
 
     def floor_db(self, t):
         """Death benefit floor based on total premiums."""
@@ -94,7 +144,11 @@ class ActiveCashflows(Component):
 
     def pw_req(self, t):
         """Requested withdrawal."""
-        return self.fund_after_premium_total(t) * self.pw_rate(t)
+        return if_(
+            self.topup_lock_active(t),
+            min(self.fund_after_premium_total(t) * self.pw_rate(t), self.withdrawable_total(t)),
+            self.fund_after_premium_total(t) * self.pw_rate(t),
+        )
 
     def admin_req_rate(self, t):
         """Scheduled admin charge per life including escalation."""
@@ -180,6 +234,19 @@ class ActiveCashflows(Component):
             self.fund_after_premium_total(t) > self.deduction_req(t)
             and self.fund_after_premium_total(t) > 0,
             1 - self.deduction_total(t) / self.fund_after_premium_total(t),
+            0,
+        )
+
+    def retention_after_withdrawal(self, t):
+        """Retention against the remaining balance after the allocated withdrawal."""
+        return if_(
+            self.fund_after_premium_total(t) > self.pw_pp(t),
+            max(
+                1
+                - (self.admin_pp(t) + self.gc_pp(t) + self.mc_pp(t))
+                / (self.fund_after_premium_total(t) - self.pw_pp(t)),
+                0,
+            ),
             0,
         )
 

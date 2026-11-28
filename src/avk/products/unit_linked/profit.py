@@ -40,6 +40,7 @@ class UnitSegmentProfit(Component):
         "mc_income",
         "partial_withdrawal_outgo",
         "rpu_growth_total",
+        "switch_charge_income",
         "unit_exit_benefits",
         "unit_reserve",
     )
@@ -49,9 +50,15 @@ class UnitSegmentProfit(Component):
         return self.A_begin(t) * self.fund_growth_total(t) + self.rpu_growth_total(t)
 
     def unit_charges_deducted(self, t):
-        """Charges taken from the units: administration, mortality and guarantee charges,
-        fund management charges on every state and discontinuance charges."""
-        return self.admin_income(t) + self.mc_income(t) + self.gc_income(t) + self.charges_end(t)
+        """Charges taken from the units: administration, mortality, guarantee and switch
+        charges, fund management charges on every state and discontinuance charges."""
+        return (
+            self.admin_income(t)
+            + self.mc_income(t)
+            + self.gc_income(t)
+            + self.switch_charge_income(t)
+            + self.charges_end(t)
+        )
 
     def increase_in_unit_reserve(self, t):
         """This month's unit reserve less last month's; none at the valuation instant."""

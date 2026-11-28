@@ -8,6 +8,7 @@ from collections.abc import Callable
 from typing import Any
 
 from avk.products.unit_linked.bindings import ASSET_CLASSES
+from avk.products.unit_linked.features import STRATEGY_FIELDS
 
 YEARS = 40
 Put = Callable[[str, list[dict[str, Any]], str], None]
@@ -378,6 +379,7 @@ def scale(variant: str, year: int) -> dict[str, float]:
     )
     return {
         "premium_allocation_rate": pac,
+        "topup_allocation_rate": 0.0,
         "admin_charge_monthly": admin,
         "loyalty_rate": loyalty,
         "booster_rate": booster,
@@ -453,6 +455,7 @@ TABLES = (
     "ul_charge_scales",
     "ul_disc_charge_caps",
     "ul_riy_caps",
+    "ul_strategies",
     "mortality_charges_ul",
     "lapse_rates_ul",
     "partial_withdrawals_ul",
@@ -463,7 +466,18 @@ SEX_FIELDS = (("male", 1.0), ("female", 0.82), ("transgender", 0.91))
 
 
 def variants() -> dict[str, dict[str, float]]:
-    return {name: {**BASE_VARIANT, **fields} for name, fields in VARIANTS.items()}
+    return {
+        name: {
+            **BASE_VARIANT,
+            **fields,
+            "topup_on": 0.0,
+            "topup_sa_multiple": 0.0,
+            "topup_lock_in_months": 0.0,
+            "switch_charge": 0.0,
+            "highest_nav_start_month": 0.0,
+        }
+        for name, fields in VARIANTS.items()
+    }
 
 
 def fund_rows() -> list[dict[str, Any]]:
@@ -486,6 +500,15 @@ def fund_rows() -> list[dict[str, Any]]:
 def ul_basis(put: Put, mortality: list[dict[str, Any]]) -> None:
     """Write the unit-linked tables through `put` (name, rows, short format name)."""
     put("ul_funds", fund_rows(), "ul_keyed")
+    put(
+        "ul_strategies",
+        [
+            {"year": year, "key": 0, "field": rule.name, "value": 0.0}
+            for year in (1, 2)
+            for rule in STRATEGY_FIELDS
+        ],
+        "ul_year_key",
+    )
     put(
         "ul_variants",
         [

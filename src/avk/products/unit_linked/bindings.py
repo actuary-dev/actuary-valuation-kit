@@ -25,6 +25,18 @@ STATUS_ACTIVE, STATUS_DPF, STATUS_RPU = 0, 1, 2
 
 POLICY_TABLE, HOLDINGS_TABLE = "policies_ul", "policy_funds_ul"
 
+# Optional on legacy books. Top-up variants require the complete input block.
+TOPUP_POLICY_FIELDS = (
+    ("Single_Top_Up_Premium", "Single Top-Up Premium", False),
+    ("Single_Top_Up_Policy_Month", "Single Top-Up Policy Month", True),
+    ("Regular_Top_Up_Premium", "Regular Top-Up Premium", False),
+    ("Top_Up_Premiums_Paid_To_Date", "Top-Up Premiums Paid To Date", False),
+    ("Last_Top_Up_Policy_Month", "Last Top-Up Policy Month", True),
+)
+TOPUP_UNITS = "Top-Up Units"
+STRATEGY_COLUMN = "Fund Strategy"
+STRATEGIES_TABLE = "ul_strategies"
+
 # Logical assumption tables.
 FUNDS_TABLE = "ul_funds"
 VARIANTS_TABLE = "ul_variants"

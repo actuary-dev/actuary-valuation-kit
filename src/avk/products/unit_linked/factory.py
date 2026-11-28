@@ -1,6 +1,7 @@
 """Unit-linked definition-layer factory: loading specification, preparation, validation."""
 
 from collections.abc import Mapping
+from dataclasses import replace
 from typing import Literal
 
 import polars as pl
@@ -31,10 +32,12 @@ from avk.products.unit_linked.bindings import (
     FUNDS_TABLE,
     HOLDINGS_TABLE,
     LAPSE_TABLE,
+    MAX_FUND_SLOTS,
     MORTALITY_CHARGES_TABLE,
     POLICY_TABLE,
     RIY_CAPS_TABLE,
     SCALES_TABLE,
+    STRATEGIES_TABLE,
     VARIANTS_TABLE,
     WITHDRAWALS_TABLE,
 )
@@ -43,6 +46,7 @@ from avk.products.unit_linked.output_columns import (
     BE_ONLY,
     CASHFLOWS,
     DECREMENTS,
+    HIGHEST_NAV,
     LAYERS,
     MCEV,
     RATIOS,
@@ -105,9 +109,11 @@ class UnitLinkedFactory(ProductFactory):
         for logical, rules in (
             (SCALES_TABLE, features.SCALE_FIELDS),
             (DISC_CAPS_TABLE, features.DISC_CAP_FIELDS),
+            (STRATEGIES_TABLE, features.STRATEGY_FIELDS),
         ):
             for rule in rules:
                 name = f"{logical}/{rule.name}"
+                preparation_only = logical == STRATEGIES_TABLE and rule.name != "share"
                 tables[name] = declare(
                     declared,
                     name,
@@ -116,6 +122,8 @@ class UnitLinkedFactory(ProductFactory):
                     "mixed",
                     columns=(rule.name,),
                     logical_name=logical,
+                    below="error" if preparation_only else None,
+                    above="clamp" if preparation_only else None,
                 )
         tables[RIY_CAPS_TABLE] = declare(
             declared,
@@ -207,6 +215,27 @@ class UnitLinkedFactory(ProductFactory):
             ),
             integer_keys=frozenset({"Policy_Month"}),
             seriatim=tuple((name, column, basis, 0) for name, column, basis in SERIATIM),
+        )
+
+    def valuation_output_schema(self, run_type: str, points: pl.DataFrame) -> OutputSchema:
+        schema = self.output_schema(run_type)
+        enabled = points.select(
+            (
+                (pl.col("V_highest_nav_start_month") > 0)
+                & pl.any_horizontal(
+                    pl.col(f"Fund_{k}_Guarantee_Type") == 1 for k in range(1, MAX_FUND_SLOTS + 1)
+                )
+            ).any()
+        ).item()
+        if not enabled:
+            return schema
+        name, column = HIGHEST_NAV
+        return replace(
+            schema,
+            entries=(
+                *schema.entries,
+                *((f"{name}_{suffix}", column, basis) for basis, suffix in LAYERS.items()),
+            ),
         )
 
     def aggregate_ratios(self, schema: OutputSchema) -> dict[str, tuple[str, str, str, float]]:

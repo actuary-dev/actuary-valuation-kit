@@ -46,6 +46,10 @@ class ProductFactory(ABC):
     @abstractmethod
     def output_schema(self, run_type: str) -> OutputSchema: ...
 
+    def valuation_output_schema(self, run_type: str, points: pl.DataFrame) -> OutputSchema:
+        """Resolve optional valuation entries from the prepared book."""
+        return self.output_schema(run_type)
+
     @abstractmethod
     def validator(self) -> PolicyValidator: ...
 

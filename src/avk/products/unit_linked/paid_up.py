@@ -16,21 +16,32 @@ class PaidUpCashflows(Component):
         "mc_rate",
         "rpu_open_total",
         "to_rpu",
+        "topup_sa_pp",
         "tpp_pp",
     )
 
     def pusa_open(self, t):
         """Opening aggregate paid-up sum assured."""
         return prev(
-            self.pusa_close, self.policy.Paid_Up_Sum_Assured * (self.policy.Policy_Status == 2)
+            self.pusa_close,
+            (
+                self.policy.Paid_Up_Sum_Assured
+                + self.policy.V_topup_on
+                * self.policy.Top_Up_Premiums_Paid_To_Date
+                * self.policy.V_topup_sa_multiple
+            )
+            * (self.policy.Policy_Status == 2),
         )
 
     def pusa_close(self, t):
         """Paid-up cover of survivors plus cover converted at cessation."""
-        return self.pusa_open(t) * self.R_survival(t) + self.to_rpu(
-            t
-        ) * self.policy.Sum_Assured * self.instalments_pp(t) / max(
-            self.policy.Instalments_Payable, 1
+        return (
+            self.pusa_open(t) * self.R_survival(t)
+            + self.to_rpu(t)
+            * self.policy.Sum_Assured
+            * self.instalments_pp(t)
+            / max(self.policy.Instalments_Payable, 1)
+            + self.to_rpu(t) * self.topup_sa_pp(t)
         )
 
     def rpu_tpp_open(self, t):

@@ -37,7 +37,7 @@ def test_fields_are_the_contract(book, ul_tables):
     points = prepare(ul_tables, *book)
     assert points.fields == PREPARED_FIELDS
     assert set(PREPARED_FIELDS) <= set(points.frame.columns)
-    assert len(PREPARED_FIELDS) == len(set(PREPARED_FIELDS)) == 32 + 26 + 3 + 13 + 5 * 18
+    assert len(PREPARED_FIELDS) == len(set(PREPARED_FIELDS)) == 46 + 31 + 3 + 13 + 5 * 22
     assert points.frame["Policy_Number"].to_list() == ["UL1", "UL2", "UL3", "UL4", "UL5", "UL6"]
 
 

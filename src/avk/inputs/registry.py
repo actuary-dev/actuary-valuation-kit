@@ -67,7 +67,7 @@ BUILTIN_FORMATS = {
     **{name: "avk_ul_keyed_v1" for name in ("ul_funds", "ul_variants", "ul_regulatory_caps")},
     **{
         name: "avk_ul_year_key_v1"
-        for name in ("ul_charge_scales", "ul_disc_charge_caps", "ul_riy_caps")
+        for name in ("ul_charge_scales", "ul_disc_charge_caps", "ul_riy_caps", "ul_strategies")
     },
     "mortality_charges_ul": "avk_mortality_v1",
     "lapse_rates_ul": "avk_lapse_v1",

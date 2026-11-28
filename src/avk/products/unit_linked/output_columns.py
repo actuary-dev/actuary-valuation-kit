@@ -7,6 +7,8 @@ segment split and capital) and `MCEV_<name>_MC` on the market-consistent basis.
 
 LAYERS = {"reserving": "reserving", "be": "BE", "mc": "MC"}
 
+HIGHEST_NAV = ("benefits_non_unit_highest_nav", "highest_nav_cost")
+
 DECREMENTS = (
     ("lives_active_begin", "A_begin"),
     ("lives_dpf_begin", "D_begin"),

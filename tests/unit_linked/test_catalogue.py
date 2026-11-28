@@ -82,6 +82,11 @@ def test_variant_fields_exact():
         "disc_ap_threshold",
         "auto_rebalance",
         "riy_additions_on",
+        "topup_on",
+        "topup_sa_multiple",
+        "topup_lock_in_months",
+        "switch_charge",
+        "highest_nav_start_month",
     ]
 
 

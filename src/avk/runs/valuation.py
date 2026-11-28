@@ -210,7 +210,7 @@ class Valuation(RunType):
         month = cfg.valuation_date.month
         calendar = (month - 1 + np.arange(inputs.months)) % 12 + 1
 
-        schema: OutputSchema = factory.output_schema(cfg.run_type)
+        schema: OutputSchema = factory.valuation_output_schema(cfg.run_type, report.points.frame)
         entries = {
             output: _label(kernel, column, basis) for output, column, basis in schema.entries
         }

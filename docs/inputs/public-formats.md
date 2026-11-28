@@ -84,5 +84,6 @@ Unit-linked tables. avk_ul_keyed_v1 serves ul_funds (key Fund Code),
 ul_variants (key Product Variant) and ul_regulatory_caps (key regime code). Keys
 sort as strings; a key with a trailing space is a different key. avk_ul_year_key_v1
 serves ul_charge_scales (key variant_id), ul_disc_charge_caps and ul_riy_caps (key
-regime_id); each binding reads one field, so one file holds several fields. The
+regime_id) and ul_strategies (numeric Fund Strategy key); each binding reads one
+field, so one file holds several fields. The
 fields of every table are listed in [the unit-linked product page](../products/unit-linked.md).
