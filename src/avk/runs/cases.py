@@ -24,7 +24,7 @@ from avk.runtime.progress import fingerprint, generated_file
 
 if TYPE_CHECKING:
     from avk.runs.check import CheckReport
-    from avk.runs.config import RunConfig
+    from avk.runs.config import DynamicLapse, RunConfig
 
 SHOCK_NAMES = ("mortality", "morbidity", "lapse", "expense", "inflation", "interest")
 RATE_SHOCKS = ("mortality", "morbidity", "lapse", "expense")  # monthly add/mult schedules
@@ -73,8 +73,10 @@ def _inflation_months(shock: Shock | None, months: int) -> npt.NDArray[np.float6
     return np.clip(month - first + 1, 0.0, max(shock.end - first + 1, 0))
 
 
-def case_parameters(case: Case | None, months: int) -> dict[str, float | npt.NDArray[np.float64]]:
-    """The run parameters one case sets (the base, None, sets the neutral ones)."""
+def case_parameters(
+    case: Case | None, months: int, *, dynamic_lapse: "DynamicLapse | None" = None
+) -> dict[str, float | npt.NDArray[np.float64]]:
+    """Case shock parameters and the run's optional unit-linked lapse settings."""
     shocks = case.shocks if case is not None else {}
     lapse_cap = np.ones(months)
     parameters: dict[str, float | npt.NDArray[np.float64]] = {
@@ -95,6 +97,12 @@ def case_parameters(case: Case | None, months: int) -> dict[str, float | npt.NDA
     parameters["inflation_add"] = inflation.additive if inflation is not None else 0.0
     parameters["inflation_mult"] = inflation.multiplicative if inflation is not None else 1.0
     parameters["inflation_months"] = _inflation_months(inflation, months)
+    for basis in ("reserving", "be", "mc"):
+        setting = getattr(dynamic_lapse, basis) if dynamic_lapse is not None else None
+        parameters[f"ul_dynamic_lapse_enabled_{basis}"] = float(setting.enabled) if setting else 0.0
+        parameters[f"ul_dynamic_lapse_slope_{basis}"] = setting.slope if setting else 0.0
+        parameters[f"ul_dynamic_lapse_floor_{basis}"] = setting.floor if setting else 1.0
+        parameters[f"ul_dynamic_lapse_cap_{basis}"] = setting.cap if setting else 1.0
     return parameters
 
 

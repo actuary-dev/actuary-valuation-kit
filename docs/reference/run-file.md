@@ -19,6 +19,8 @@ See [how-tos](../how-tos.md) for conditional settings and complete examples.
 | `Cases` | no | `{"anyOf": [{"items": {"additionalProperties": true, "type": "object"}, "type": "array"}, {"additionalProperties": {"type": "string"}, "type": "object"}, {"type": "null"}], "default": null}` |
 | `Stress_Set` | no | `{"anyOf": [{"type": "string"}, {"additionalProperties": true, "type": "object"}, {"type": "null"}], "default": null}` |
 | `IFRS17` | no | `{"anyOf": [{"additionalProperties": true, "type": "object"}, {"type": "null"}], "default": null}` |
+| `Scenario_Summary` | no | `{"anyOf": [{"$ref": "#/$defs/ScenarioSummary"}, {"type": "null"}], "default": null}` |
+| `Dynamic_Lapse` | no | `{"anyOf": [{"$ref": "#/$defs/DynamicLapse"}, {"type": "null"}], "default": null}` |
 | `Device` | no | `{"default": "cpu", "enum": ["cpu", "gpu"], "type": "string"}` |
 
 Full JSON Schema (including nested definitions):
@@ -60,6 +62,59 @@ Full JSON Schema (including nested definitions):
         "Database"
       ],
       "title": "Connection",
+      "type": "object"
+    },
+    "DynamicLapse": {
+      "additionalProperties": false,
+      "properties": {
+        "be": {
+          "$ref": "#/$defs/DynamicLapseBasis"
+        },
+        "mc": {
+          "$ref": "#/$defs/DynamicLapseBasis"
+        },
+        "reserving": {
+          "$ref": "#/$defs/DynamicLapseBasis"
+        }
+      },
+      "required": [
+        "reserving",
+        "be",
+        "mc"
+      ],
+      "title": "DynamicLapse",
+      "type": "object"
+    },
+    "DynamicLapseBasis": {
+      "additionalProperties": false,
+      "properties": {
+        "Cap": {
+          "minimum": 0,
+          "title": "Cap",
+          "type": "number"
+        },
+        "Enabled": {
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "Floor": {
+          "minimum": 0,
+          "title": "Floor",
+          "type": "number"
+        },
+        "Slope": {
+          "minimum": 0,
+          "title": "Slope",
+          "type": "number"
+        }
+      },
+      "required": [
+        "Enabled",
+        "Slope",
+        "Floor",
+        "Cap"
+      ],
+      "title": "DynamicLapseBasis",
       "type": "object"
     },
     "InputSpec": {
@@ -207,6 +262,46 @@ Full JSON Schema (including nested definitions):
       },
       "title": "Location",
       "type": "object"
+    },
+    "ScenarioSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "CTE_Levels": {
+          "items": {
+            "exclusiveMaximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "title": "Cte Levels",
+          "type": "array"
+        },
+        "Percentiles": {
+          "items": {
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "title": "Percentiles",
+          "type": "array"
+        },
+        "Tail": {
+          "$ref": "#/$defs/Tail"
+        }
+      },
+      "required": [
+        "Percentiles",
+        "CTE_Levels",
+        "Tail"
+      ],
+      "title": "ScenarioSummary",
+      "type": "object"
+    },
+    "Tail": {
+      "enum": [
+        "upper",
+        "lower"
+      ],
+      "type": "string"
     }
   },
   "additionalProperties": false,
@@ -246,6 +341,17 @@ Full JSON Schema (including nested definitions):
       ],
       "title": "Device",
       "type": "string"
+    },
+    "Dynamic_Lapse": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DynamicLapse"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     },
     "IFRS17": {
       "anyOf": [
@@ -300,6 +406,17 @@ Full JSON Schema (including nested definitions):
     "Run_Type": {
       "title": "Run Type",
       "type": "string"
+    },
+    "Scenario_Summary": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ScenarioSummary"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     },
     "Stream_Parquet_Path": {
       "anyOf": [

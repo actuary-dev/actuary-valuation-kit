@@ -111,11 +111,13 @@ To run again using the file, replace the `Scenarios` entry and rerun the valuati
 ## Supplied Parquet format
 
 Each row holds integer `Scenario`, integer `Seed`, integer `Month` and one
-monthly-effective rate column per declared variable. Include exactly those
-columns and every month from zero to `Projection_Term * 12 - 1`, once per
-scenario. Each scenario has a constant seed and equal weight. AVK reads the
-rows in scenario-number and month order. Set `Measure` in the receiving run
-file to match the measure used to build the paths.
+monthly-effective rate column per declared variable. Include every month from
+zero to `Projection_Term * 12 - 1`, once per scenario, with a constant seed.
+An optional numeric `Weight` column supplies the scenario probability. Repeat
+it for every month in the path, use finite values between zero and one, and
+make the per-scenario weights sum to one. AVK assumes equal weights if the
+column is omitted. It reads rows in scenario-number and month order. Set
+`Measure` in the receiving run file to match the measure used to build the paths.
 
 `avk scenarios generate RUN_FILE OUTPUT.parquet` uses the run's generator,
 defaulting to the deterministic curves. A deterministic export has scenario
@@ -161,14 +163,16 @@ Save this as `demo-term/library.json` for two illustration paths and a one-off f
 uv run avk scenarios library demo-term/valuation.json demo-term/library.json demo-term/library
 ```
 
-## Unit-linked design
+## Scenario summaries and UNIT_LINKED
 
 The UNIT_LINKED design declares `roi`, `vroi`, `reference_forward` and ten
 monthly-effective asset returns: `ret_eq_large`, `ret_eq_mid`, `ret_eq_small`,
 `ret_eq_global`, `ret_gov_long`, `ret_gov_short`, `ret_corp_bond`,
-`ret_money_market`, `ret_gold` and `ret_real_assets`. The planned baseline
+`ret_money_market`, `ret_gold` and `ret_real_assets`. The deterministic baseline
 reads the return columns from `ul_asset_returns` with a one-month lag. For a
 risk-neutral set, use the chosen risk-free variable (such as
 `reference_forward`) as `Risk_Free`, and list the asset returns to vary in
 `Assets`. A supplied file includes all declared variables, including the ones
-left deterministic. [Unit-linked design](superpowers/specs/2026-11-26-unit-linked-product-design.md)
+left deterministic. The worked tutorial shows how to add the optional
+`Scenario_Summary` block to a multi-path Valuation, compare present values, and
+enable dynamic lapse. [Stochastic UNIT_LINKED valuation](unit-linked-stochastic.md)

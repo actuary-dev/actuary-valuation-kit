@@ -1,6 +1,17 @@
 """Timing and decrements for the three unit-linked policy states."""
 
-from avk.model.lang import Component, by_basis, clip, if_, int_axis, keymap, param, run_param, table
+from avk.model.lang import (
+    Component,
+    by_basis,
+    clip,
+    if_,
+    int_axis,
+    keymap,
+    param,
+    prev,
+    run_param,
+    table,
+)
 
 
 def year_table(name: str, key: str) -> object:
@@ -27,7 +38,15 @@ def channel_table(name: str) -> object:
 class UnitLinkedDecrements(Component):
     """Contract timing, modal premiums and monthly rates on each basis."""
 
-    REQUIRES = ("policy_month", "policy_year", "age")
+    REQUIRES = (
+        "policy_month",
+        "policy_year",
+        "age",
+        "fund_open_total",
+        "tpp_pp",
+        "rpu_open_total",
+        "rpu_tpp_open",
+    )
 
     mortality = table(
         "mortality",
@@ -49,6 +68,26 @@ class UnitLinkedDecrements(Component):
     lapse_add = run_param("lapse_add", monthly=True)
     lapse_mult = run_param("lapse_mult", monthly=True)
     lapse_maximum_decrease = run_param("lapse_maximum_decrease", monthly=True)
+    dynamic_enabled = by_basis(
+        reserving=run_param("ul_dynamic_lapse_enabled_reserving"),
+        be=run_param("ul_dynamic_lapse_enabled_be"),
+        mc=run_param("ul_dynamic_lapse_enabled_mc"),
+    )
+    dynamic_slope = by_basis(
+        reserving=run_param("ul_dynamic_lapse_slope_reserving"),
+        be=run_param("ul_dynamic_lapse_slope_be"),
+        mc=run_param("ul_dynamic_lapse_slope_mc"),
+    )
+    dynamic_floor = by_basis(
+        reserving=run_param("ul_dynamic_lapse_floor_reserving"),
+        be=run_param("ul_dynamic_lapse_floor_be"),
+        mc=run_param("ul_dynamic_lapse_floor_mc"),
+    )
+    dynamic_cap = by_basis(
+        reserving=run_param("ul_dynamic_lapse_cap_reserving"),
+        be=run_param("ul_dynamic_lapse_cap_be"),
+        mc=run_param("ul_dynamic_lapse_cap_mc"),
+    )
 
     def term_months(self, t):
         """Number of months in the policy term."""
@@ -153,16 +192,62 @@ class UnitLinkedDecrements(Component):
         """Annual surrender uses the full rate once recurring premiums stop."""
         return self.discontinuance_rate(t) * if_(self.paying(t), self.surrender_share, 1)
 
+    def active_tpp_open(self, t):
+        """Premiums paid per active life before this month's premium."""
+        return prev(self.tpp_pp, self.policy.Premiums_Paid_To_Date)
+
+    def surrender_multiplier_A(self, t):
+        """Active surrender response to the ratio of opening fund to opening premiums paid."""
+        return if_(
+            self.dynamic_enabled and self.active_tpp_open(t) > 0,
+            clip(
+                if_(
+                    self.dynamic_slope == 0,
+                    1,
+                    1
+                    + self.dynamic_slope * (self.fund_open_total(t) / self.active_tpp_open(t) - 1),
+                ),
+                self.dynamic_floor,
+                self.dynamic_cap,
+            ),
+            1,
+        )
+
+    def surrender_multiplier_R(self, t):
+        """Paid-up surrender response using the ratio of aggregate opening balances."""
+        return if_(
+            self.dynamic_enabled and self.rpu_tpp_open(t) > 0,
+            clip(
+                if_(
+                    self.dynamic_slope == 0,
+                    1,
+                    1 + self.dynamic_slope * (self.rpu_open_total(t) / self.rpu_tpp_open(t) - 1),
+                ),
+                self.dynamic_floor,
+                self.dynamic_cap,
+            ),
+            1,
+        )
+
     def w_surrender(self, t):
         """Monthly active surrender rate, excluding the maturity month."""
         return (
-            (1 - (1 - self.surrender_rate(t)) ** (1 / 12)) * self.live(t) * (1 - self.maturity(t))
+            min(
+                (1 - (1 - self.surrender_rate(t)) ** (1 / 12)) * self.surrender_multiplier_A(t),
+                1,
+            )
+            * self.live(t)
+            * (1 - self.maturity(t))
         )
 
     def w_surrender_full(self, t):
         """Monthly paid-up surrender rate, based on the full discontinuance rate."""
         return (
-            (1 - (1 - self.discontinuance_rate(t)) ** (1 / 12))
+            min(
+                (1 - (1 - self.discontinuance_rate(t)) ** (1 / 12))
+                * self.surrender_multiplier_R(t),
+                1,
+            )
             * self.live(t)
             * (1 - self.maturity(t))
         )
