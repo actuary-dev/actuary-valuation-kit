@@ -21,7 +21,9 @@ a Python actuarial projection engine. Work only in your git worktree and on your
    `feature/unit-linked`. Never rewrite published history.
 4. Keep existing products' saved results byte-identical; never relax a tolerance; never
    edit `tests/saved` except where your plan says so.
-5. Do not use Claude subagents (the Agent tool). Work inline.
+5. Do not use Claude subagents (the Agent tool). Work inline. Run one test suite at a
+   time and wait for it; stop any background run you no longer need. Overlapping long
+   runs in one checkout have exhausted the machine's memory.
 6. Before declaring the phase done, run every check in `CLAUDE.md` and paste the summary
    (pass/fail counts) into the log. If something cannot pass, stop and write why in the
    log instead of weakening the check.

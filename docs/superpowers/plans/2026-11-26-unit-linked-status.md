@@ -37,6 +37,10 @@ Environment facts learned:
   `run_codex.sh`.
 - Claude sessions get app-managed worktrees under `.claude\worktrees\` and commit
   themselves.
+- Memory: two Codex workers with overlapping long pytest runs starved the machine
+  (1.3 GB free of 23.6 GB; one P5 run held 7.9 GB and ran about seven hours). Every
+  worker prompt must say: run one test suite at a time, wait for it, and stop any
+  background run you no longer need.
 - The app refuses to start a nested session on a turn begun by a background-task event
   (for example a Codex completion). Such a turn can only propose a card, and the card
   drops `source_branch`, so the brief must check its base branch. Codex runs have no such
@@ -200,3 +204,8 @@ merged, blocked.
   additions in the projection, highest-NAV capital classification, TVOG wiring,
   illustration limits, status docs), and P5 in Codex (`C:\avkwt\prompts\p5.md`), in
   parallel.
+- 2026-11-29 A side session, at the maintainer's request, stopped three stale P5 Codex
+  test runs in `C:\avkwt\p5` to free memory. Any P5 result from `.tmp/p5-task1-reg`,
+  `.tmp/p5-slow` or `.tmp/p5-all` is invalid. Before merging P5, the orchestrator re-runs
+  its demo-suite, slow and full checks itself. Left running: P5's StressCapital test,
+  the integration pass's final `pytest` and `pytest -m slow`, and both Codex processes.
